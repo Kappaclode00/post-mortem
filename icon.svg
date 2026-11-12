@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Post-Mortem">
+  <rect width="512" height="512" fill="#1F6F78"/>
+  <g>
+    <rect x="96" y="96" width="320" height="320" rx="24" fill="#EEF2F5"/>
+    <g fill="#869DB1">
+      <rect x="176" y="96" width="80" height="80"/><rect x="336" y="96" width="80" height="80"/>
+      <rect x="96" y="176" width="80" height="80"/><rect x="256" y="176" width="80" height="80"/>
+      <rect x="176" y="256" width="80" height="80"/><rect x="336" y="256" width="80" height="80"/>
+      <rect x="96" y="336" width="80" height="80"/><rect x="256" y="336" width="80" height="80"/>
+    </g>
+  </g>
+  <path d="M256 150c-30 0-52 22-52 50 0 18 9 30 20 40-12 8-24 22-24 42v24h112v-24c0-20-12-34-24-42 11-10 20-22 20-40 0-28-22-50-52-50z" fill="#14202B"/>
+  <path d="M300 214l60 60m0-60l-60 60" stroke="#C2403A" stroke-width="22" stroke-linecap="round" transform="translate(0,56) scale(.9) translate(30,10)"/>
+</svg>
