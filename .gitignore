@@ -1,0 +1,8 @@
+node_modules/
+.DS_Store
+Thumbs.db
+*.log
+.wrangler/
+# large or generated test files (see tests/fetch-deps.sh)
+tests/stockfish-10.0.2*
+tests/real-engine.json
