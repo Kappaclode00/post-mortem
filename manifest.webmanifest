@@ -1,0 +1,14 @@
+{
+  "name": "Post-Mortem, Chess.com game review",
+  "short_name": "Post-Mortem",
+  "description": "Free game review and training from your own Chess.com games, powered by Stockfish in your browser.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF2F5",
+  "theme_color": "#1F6F78",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
