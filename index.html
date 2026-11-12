@@ -1,0 +1,1453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Post-Mortem, a free Chess.com game review</title>
+<meta name="description" content="Free game review and training from your own Chess.com games. Stockfish runs in your browser, nothing is uploaded.">
+<meta name="theme-color" content="#1F6F78">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#14202B; --paper:#EEF2F5; --card:#FFFFFF; --muted:#52636F; --line:#D2DAE1;
+  --accent:#1F6F78; --on-accent:#FFFFFF; --sq-l:#E3E9EE; --sq-d:#869DB1;
+  --best:#2E8B57; --inacc:#C9A227; --mistake:#D9822B; --blunder:#C2403A;
+  --focus:#1F6F78; --soft:#E4ECEF;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --ink:#E7EEF3; --paper:#0E161D; --card:#16212B; --muted:#9FB0BD; --line:#2A3B4B; --accent:#58B8C3; --on-accent:#0E161D; --focus:#58B8C3; --soft:#1C2B37; }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Schibsted Grotesk',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.45;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+h1,h2,h3{line-height:1.2;margin:0}
+h1{font-size:1.6rem;font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.15rem;font-weight:650}
+h3{font-size:1rem;font-weight:650}
+p{margin:.4em 0}
+.wrap{max-width:1080px;margin:0 auto;padding:16px}
+.muted{color:var(--muted)}
+.small{font-size:.875rem}
+a{color:var(--accent)}
+:focus-visible{outline:3px solid var(--focus);outline-offset:2px;border-radius:4px}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.btn{min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--card);font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn.small{min-height:36px;padding:0 12px;font-size:.9rem}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+header.top{display:flex;flex-wrap:wrap;gap:4px 16px;align-items:baseline;margin-bottom:12px}
+header.top p{margin:0}
+form#setup{display:grid;gap:10px;grid-template-columns:repeat(2,minmax(0,1fr));background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px}
+form#setup label{display:flex;flex-direction:column;gap:4px;font-size:.875rem;color:var(--muted);font-weight:500}
+form#setup .full{grid-column:1/-1}
+input,select{min-height:44px;border:1px solid var(--line);border-radius:10px;padding:0 10px;background:var(--paper);width:100%}
+@media(min-width:760px){form#setup{grid-template-columns:2fr 1.2fr 1fr 1.2fr auto;align-items:end}form#setup .full{grid-column:auto}}
+#msg{margin:12px 0 0}
+.note{border-radius:10px;padding:10px 12px;border:1px solid var(--line);background:var(--card);border-left:5px solid var(--accent)}
+.note.error{border-left-color:var(--blunder)}
+.note.warn{border-left-color:var(--mistake)}
+#progress{position:sticky;top:0;z-index:20;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:12px 0;display:flex;gap:12px;align-items:center;box-shadow:0 2px 8px rgba(0,0,0,.08)}
+#progress[hidden]{display:none}
+#progress .bar{flex:1;height:8px;background:var(--soft);border-radius:99px;overflow:hidden;min-width:60px}
+#progress .bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .2s}
+#progress .txt{font-size:.9rem;flex:2}
+nav.tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--line);overflow-x:auto}
+nav.tabs button{background:none;border:0;border-bottom:3px solid transparent;padding:10px 14px;min-height:44px;font-weight:600;color:var(--muted);white-space:nowrap}
+nav.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+section.tab[hidden]{display:none}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px}
+.chip{background:var(--card);border:1px solid var(--line);border-radius:99px;padding:6px 12px;font-size:.9rem}
+.chip b{font-weight:700}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-bottom:12px}
+.toolbar select{width:auto;min-width:140px}
+ul.games{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+li.game{display:grid;grid-template-columns:1fr auto;gap:6px 10px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;align-items:center}
+li.game .title{font-weight:650}
+li.game .meta{color:var(--muted);font-size:.85rem}
+li.game .side{display:flex;gap:8px;align-items:center;justify-content:flex-end}
+.res{font-weight:700;font-size:.8rem;padding:3px 9px;border-radius:99px;color:#fff}
+.res.win{background:var(--best)} .res.loss{background:var(--blunder)} .res.draw{background:#6C7E8C}
+.acc{font-weight:700;min-width:3.2em;text-align:right}
+.empty{padding:24px 8px;color:var(--muted)}
+/* board */
+.rv{display:grid;gap:16px}
+@media(min-width:900px){.rv{grid-template-columns:minmax(0,560px) minmax(0,1fr);align-items:start}}
+.boardrow{display:flex;gap:8px;align-items:stretch}
+.evalbar{width:34px;border-radius:6px;overflow:hidden;position:relative;background:#14202B;flex:none;border:1px solid var(--line)}
+.evalbar .fill{position:absolute;left:0;right:0;background:#F4F7F9;transition:height .2s}
+.evalbar .lbl{position:absolute;left:0;right:0;text-align:center;font-size:.68rem;font-weight:700;line-height:1.1}
+.boardwrap{flex:1;min-width:0;container-type:inline-size;position:relative}
+.board{display:grid;grid-template-columns:repeat(8,1fr);grid-template-rows:repeat(8,1fr);aspect-ratio:1;border-radius:8px;overflow:hidden;position:relative;border:1px solid var(--line);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.sq{position:relative;display:flex;align-items:center;justify-content:center;background:var(--sq-l);padding:0;border:0;border-radius:0;min-width:0}
+.sq.d{background:var(--sq-d)}
+.sq.hl{background:color-mix(in srgb,var(--hlc) 62%,var(--sq-l))}
+.sq.d.hl{background:color-mix(in srgb,var(--hlc) 62%,var(--sq-d))}
+.sq.sel{box-shadow:inset 0 0 0 4px var(--accent)}
+.sq.tgt::after{content:"";position:absolute;width:26%;height:26%;border-radius:50%;background:rgba(20,32,43,.35)}
+.sq.tgt.cap::after{width:84%;height:84%;background:none;border:4px solid rgba(20,32,43,.35)}
+.pc{font-size:11.2cqw;line-height:1;font-family:"Segoe UI Symbol","Noto Sans Symbols 2","DejaVu Sans","Apple Symbols",sans-serif;z-index:1;pointer-events:none}
+@supports not (font-size:1cqw){.pc{font-size:9vw}}
+.pc.w{color:#fff;-webkit-text-stroke:1.4px #14202B;paint-order:stroke fill;text-shadow:0 0 1px #14202B,0 0 1px #14202B}
+.pc.b{color:#14202B;text-shadow:0 0 1px rgba(255,255,255,.35)}
+.co{position:absolute;font-size:2.7cqw;font-weight:700;opacity:.7;pointer-events:none;color:#14202B}
+.co.f{right:3px;bottom:1px}.co.r{left:3px;top:1px}
+.arrow{position:absolute;inset:0;pointer-events:none;z-index:3}
+.ctrl{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;align-items:center}
+.ctrl .btn{min-width:48px}
+.switch{display:flex;gap:8px;align-items:center;font-weight:600}
+.switch input{width:20px;height:20px;min-height:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+.graph{width:100%;height:auto;display:block;cursor:pointer}
+.mv{position:relative;display:grid;grid-template-columns:2.4em 1fr 1fr;gap:2px 4px;max-height:260px;overflow:auto;font-variant-numeric:tabular-nums}
+.mv .n{color:var(--muted);font-size:.85rem;padding:6px 0}
+.mv button{background:none;border:0;border-radius:6px;padding:6px 8px;text-align:left;min-height:36px}
+.mv button:hover{background:var(--soft)}
+.mv button.user{font-weight:700}
+.mv button.cur{background:var(--soft);box-shadow:inset 0 0 0 2px var(--accent)}
+.mk{margin-left:2px;font-weight:700}
+.mk.inaccuracy{color:#8F7410}.mk.mistake{color:#B3661A}.mk.blunder{color:var(--blunder)}
+@media(prefers-color-scheme:dark){.mk.inaccuracy{color:var(--inacc)}.mk.mistake{color:var(--mistake)}}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.c-best,.c-good{--hlc:var(--best)}.c-inaccuracy{--hlc:var(--inacc)}.c-mistake{--hlc:var(--mistake)}.c-blunder{--hlc:var(--blunder)}
+.dot.c-best,.dot.c-good{background:var(--best)}.dot.c-inaccuracy{background:var(--inacc)}.dot.c-mistake{background:var(--mistake)}.dot.c-blunder{background:var(--blunder)}
+.lesson{border-left:5px solid var(--mistake);background:var(--soft);border-radius:8px;padding:10px 12px;margin-top:10px}
+.lesson.blunder{border-left-color:var(--blunder)}
+.lesson h3{margin-bottom:4px}
+.lesson .k{font-weight:700}
+.line{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9rem;background:var(--soft);padding:2px 6px;border-radius:6px;display:inline-block}
+.grid3{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.stat .v{font-size:1.5rem;font-weight:700}
+.stat .l{color:var(--muted);font-size:.85rem}
+table.t{width:100%;border-collapse:collapse;font-size:.92rem}
+table.t th,table.t td{text-align:left;padding:7px 6px;border-bottom:1px solid var(--line)}
+table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
+.sec{margin:20px 0 8px}
+.weak{border-left:5px solid var(--blunder)} .strong{border-left:5px solid var(--best)}
+.weak h3,.strong h3{margin-bottom:2px}
+.bars{display:grid;gap:6px}
+.bar-row{display:grid;grid-template-columns:minmax(120px,40%) 1fr 2.5em;gap:8px;align-items:center;font-size:.9rem}
+.bar-row .b{height:10px;background:var(--soft);border-radius:99px;overflow:hidden}
+.bar-row .b i{display:block;height:100%;background:var(--accent)}
+.trainhead{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:12px}
+.verdict{font-weight:700}
+.verdict.ok{color:var(--best)}.verdict.no{color:var(--blunder)}
+.foot{margin:28px 0 8px;color:var(--muted);font-size:.85rem}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <h1>Post-Mortem</h1>
+  <p class="muted">Review your Chess.com games with Stockfish, right in your browser. Nothing is uploaded.</p>
+</header>
+
+<form id="setup" autocomplete="off">
+  <label class="full">Chess.com username
+    <input id="user" name="user" type="text" required autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="for example hikaru">
+  </label>
+  <label>Month
+    <input id="month" type="month" required pattern="\d{4}-\d{2}">
+  </label>
+  <label>Months to load
+    <select id="months"><option value="1">1</option><option value="2">2</option><option value="3">3</option></select>
+  </label>
+  <label>Analysis depth
+    <select id="depth"><option value="8">Fast (8)</option><option value="10" selected>Standard (10)</option><option value="13">Deep (13)</option></select>
+  </label>
+  <button class="btn primary full" id="loadBtn" type="submit">Load games</button>
+</form>
+<div id="msg" role="alert" aria-live="polite"></div>
+<div id="progress" hidden>
+  <div class="txt" id="progTxt" aria-live="polite"></div>
+  <div class="bar"><i id="progBar"></i></div>
+  <button class="btn small" id="stopBtn" type="button">Stop</button>
+</div>
+
+<nav class="tabs" role="tablist" aria-label="Sections">
+  <button role="tab" id="t-games" aria-selected="true" aria-controls="tab-games" data-tab="games">Games</button>
+  <button role="tab" id="t-review" aria-selected="false" aria-controls="tab-review" data-tab="review">Review</button>
+  <button role="tab" id="t-patterns" aria-selected="false" aria-controls="tab-patterns" data-tab="patterns">Patterns</button>
+  <button role="tab" id="t-train" aria-selected="false" aria-controls="tab-train" data-tab="train">Train</button>
+</nav>
+
+<section class="tab" id="tab-games" role="tabpanel" aria-labelledby="t-games">
+  <div class="chips" id="chips"></div>
+  <div class="toolbar">
+    <label class="small muted" for="tcFilter">Time control</label>
+    <select id="tcFilter"><option value="all">All</option></select>
+    <button class="btn small" id="analyzeAll" type="button" disabled>Analyze unreviewed</button>
+  </div>
+  <ul class="games" id="gameList"><li class="empty">Enter a username above and load your games.</li></ul>
+</section>
+
+<section class="tab" id="tab-review" role="tabpanel" aria-labelledby="t-review" hidden>
+  <div id="reviewEmpty" class="empty">Pick a game on the Games tab and press Analyze or Review.</div>
+  <div class="rv" id="rv" hidden>
+    <div>
+      <div class="boardrow">
+        <div class="evalbar" id="evalbar" aria-hidden="true"><div class="fill" id="evalfill"></div><div class="lbl" id="evaltop"></div><div class="lbl" id="evalbot" style="bottom:0"></div></div>
+        <div class="boardwrap"><div class="board" id="board" role="grid" aria-label="Chess board"></div><svg class="arrow" id="arrow" viewBox="0 0 8 8" aria-hidden="true"></svg></div>
+      </div>
+      <div class="ctrl">
+        <button class="btn" id="bFirst" aria-label="First position">&#x23EE;</button>
+        <button class="btn" id="bPrev" aria-label="Previous move">&#x25C0;</button>
+        <button class="btn" id="bNext" aria-label="Next move">&#x25B6;</button>
+        <button class="btn" id="bLast" aria-label="Last position">&#x23ED;</button>
+        <button class="btn" id="bFlip">Flip</button>
+        <label class="switch"><input type="checkbox" id="showBest"> Show best move</label>
+      </div>
+    </div>
+    <div>
+      <div class="panel"><h2 id="rvTitle"></h2><p class="muted small" id="rvSub"></p></div>
+      <div class="panel"><svg class="graph" id="graph" viewBox="0 0 600 120" role="img" aria-label="Evaluation graph. Click to jump to a move."></svg></div>
+      <div class="panel" id="detail"></div>
+      <div class="panel"><div class="mv" id="movelist"></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="tab" id="tab-patterns" role="tabpanel" aria-labelledby="t-patterns" hidden>
+  <div id="patterns"></div>
+</section>
+
+<section class="tab" id="tab-train" role="tabpanel" aria-labelledby="t-train" hidden>
+  <div id="train"></div>
+</section>
+
+<p class="foot" id="foot">Engine: Stockfish 10 (GPL), loaded from a public CDN into a worker in your browser. Rules: chess.js. Everything the app says about your moves comes from engine output and fixed rules written in this page.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script>window.Chess||document.write('<script src="vendor/chess.js"><\/script>')</script>
+<script>
+/*CORE-START*/
+/* Pure logic: scoring, parsing, rule-based coach, aggregation. No DOM, no network. */
+const PV = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 100 };
+const PNAME = { p: 'pawn', n: 'knight', b: 'bishop', r: 'rook', q: 'queen', k: 'king' };
+const MATE_T = 9000;
+const CAT_LABEL = {
+  mate_missed: 'Missed a forced mate',
+  mate_allowed: 'Walked into mate',
+  hung: 'Left a piece to be captured',
+  allowed_tactic: 'Allowed a fork or check combination',
+  missed_tactic: 'Missed a fork, pin or skewer',
+  missed_capture: 'Missed free material',
+  opening: 'Opening slip',
+  endgame: 'Endgame slip',
+  positional: 'Positional slip'
+};
+
+function clamp(x, a, b) { return Math.max(a, Math.min(b, x)); }
+function winPct(cp) { return 50 + 50 * (2 / (1 + Math.exp(-0.00368208 * clamp(cp, -1500, 1500))) - 1); }
+function moveAccuracy(loss) { return clamp(103.1668 * Math.exp(-0.04354 * loss) - 3.1669, 0, 100); }
+function classify(loss, isBest) {
+  if (isBest || loss < 1) return 'best';
+  if (loss < 5) return 'good';
+  if (loss < 10) return 'inaccuracy';
+  if (loss < 20) return 'mistake';
+  return 'blunder';
+}
+function phaseOf(fullmove) { return fullmove <= 10 ? 'opening' : fullmove <= 30 ? 'middlegame' : 'endgame'; }
+const MARKS = { best: '', good: '', inaccuracy: '?!', mistake: '?', blunder: '??' };
+
+/* ---------- engine output parsing ---------- */
+function scoreToWhite(kind, val, whiteToMove) {
+  const cp = kind === 'mate' ? Math.sign(val) * (10000 - Math.abs(val) * 10) : val;
+  return whiteToMove ? cp : -cp;
+}
+function parseInfoLine(line) {
+  if (line.indexOf('info ') !== 0 || line.indexOf(' score ') < 0) return null;
+  if (/ (lowerbound|upperbound)( |$)/.test(line)) return null;
+  const m = line.match(/ score (cp|mate) (-?\d+)/);
+  if (!m) return null;
+  const d = line.match(/ depth (\d+)/);
+  const pvIdx = line.indexOf(' pv ');
+  const pv = pvIdx >= 0 ? line.slice(pvIdx + 4).trim().split(/\s+/) : [];
+  return { depth: d ? +d[1] : 0, kind: m[1], val: +m[2], pv };
+}
+
+/* ---------- small board model (independent of chess.js) ---------- */
+function fenToBoard(fen) {
+  const rows = fen.split(' ')[0].split('/');
+  const b = new Array(64).fill(null);
+  rows.forEach((row, i) => {
+    const rank = 7 - i; let f = 0;
+    for (const ch of row) {
+      if (/\d/.test(ch)) f += +ch;
+      else { b[rank * 8 + f] = { t: ch.toLowerCase(), c: ch === ch.toLowerCase() ? 'b' : 'w' }; f++; }
+    }
+  });
+  return b;
+}
+function sqIdx(name) { return (+name[1] - 1) * 8 + 'abcdefgh'.indexOf(name[0]); }
+function sqName(i) { return 'abcdefgh'[i % 8] + ((i >> 3) + 1); }
+const KN = [[1, 2], [2, 1], [-1, 2], [-2, 1], [1, -2], [2, -1], [-1, -2], [-2, -1]];
+const KG = [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]];
+const RD = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+const BD = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+function attackSquares(b, idx) {
+  const p = b[idx]; if (!p) return [];
+  const f = idx % 8, r = idx >> 3, out = [];
+  const add = (ff, rr) => { if (ff >= 0 && ff < 8 && rr >= 0 && rr < 8) out.push(rr * 8 + ff); };
+  if (p.t === 'p') { const dr = p.c === 'w' ? 1 : -1; add(f - 1, r + dr); add(f + 1, r + dr); }
+  else if (p.t === 'n') KN.forEach(d => add(f + d[0], r + d[1]));
+  else if (p.t === 'k') KG.forEach(d => add(f + d[0], r + d[1]));
+  else {
+    const dirs = p.t === 'r' ? RD : p.t === 'b' ? BD : RD.concat(BD);
+    dirs.forEach(d => {
+      let ff = f + d[0], rr = r + d[1];
+      while (ff >= 0 && ff < 8 && rr >= 0 && rr < 8) {
+        out.push(rr * 8 + ff);
+        if (b[rr * 8 + ff]) break;
+        ff += d[0]; rr += d[1];
+      }
+    });
+  }
+  return out;
+}
+function attackersOf(b, idx, color) {
+  const out = [];
+  for (let i = 0; i < 64; i++) if (b[i] && b[i].c === color && attackSquares(b, i).indexOf(idx) >= 0) out.push(i);
+  return out;
+}
+/* Static exchange: material the side can win by starting captures on idx (>= 0). */
+function seeGain(b, idx, side, depth) {
+  depth = depth || 0;
+  const target = b[idx];
+  if (!target || depth > 12) return 0;
+  const atk = attackersOf(b, idx, side);
+  if (!atk.length) return 0;
+  atk.sort((x, y) => PV[b[x].t] - PV[b[y].t]);
+  const a = atk[0];
+  const nb = b.slice(); nb[idx] = nb[a]; nb[a] = null;
+  const g = PV[target.t] - seeGain(nb, idx, side === 'w' ? 'b' : 'w', depth + 1);
+  return Math.max(0, g);
+}
+function material(b, color) {
+  let s = 0; for (const p of b) if (p && p.c === color && p.t !== 'k') s += PV[p.t]; return s;
+}
+function nonPawnMaterial(b) {
+  let s = 0; for (const p of b) if (p && p.t !== 'k' && p.t !== 'p') s += PV[p.t]; return s;
+}
+function kingIdx(b, color) { for (let i = 0; i < 64; i++) if (b[i] && b[i].t === 'k' && b[i].c === color) return i; return -1; }
+function isPassed(b, idx) {
+  const p = b[idx]; if (!p || p.t !== 'p') return false;
+  const f = idx % 8, r = idx >> 3, dr = p.c === 'w' ? 1 : -1;
+  for (let rr = r + dr; rr >= 0 && rr < 8; rr += dr)
+    for (let ff = Math.max(0, f - 1); ff <= Math.min(7, f + 1); ff++) {
+      const q = b[rr * 8 + ff]; if (q && q.t === 'p' && q.c !== p.c) return false;
+    }
+  return true;
+}
+function centreDist(idx) {
+  const f = idx % 8, r = idx >> 3;
+  return Math.max(Math.max(3 - f, f - 4, 0), Math.max(3 - r, r - 4, 0));
+}
+const other = c => (c === 'w' ? 'b' : 'w');
+
+/* ---------- chess.js helpers ---------- */
+function uciMove(chess, uci) {
+  if (!uci || uci.length < 4) return null;
+  return chess.move({ from: uci.slice(0, 2), to: uci.slice(2, 4), promotion: uci.length > 4 ? uci[4] : undefined });
+}
+function pvToSan(fen, pv, maxPlies) {
+  const c = new Chess(fen), out = [];
+  for (let i = 0; i < Math.min(pv.length, maxPlies || 5); i++) {
+    const m = uciMove(c, pv[i]); if (!m) break;
+    out.push(m.san);
+  }
+  return out;
+}
+function numberedLine(fen, pv, maxPlies) {
+  const c = new Chess(fen), parts = [];
+  let num = +fen.split(' ')[5] || 1, white = c.turn() === 'w';
+  for (let i = 0; i < Math.min(pv.length, maxPlies || 5); i++) {
+    const m = uciMove(c, pv[i]); if (!m) break;
+    if (white) parts.push(num + '. ' + m.san);
+    else parts.push((i === 0 ? num + '... ' : '') + m.san);
+    if (!white) num++;
+    white = !white;
+  }
+  return parts.join(' ');
+}
+/* material (mover's point of view) after each ply of a line, index 0 = start */
+function materialAlong(fen, pv, color, maxPlies) {
+  const c = new Chess(fen); const res = [];
+  const bal = () => { const b = fenToBoard(c.fen()); return material(b, color) - material(b, other(color)); };
+  res.push(bal());
+  for (let i = 0; i < Math.min(pv.length, maxPlies); i++) { if (!uciMove(c, pv[i])) break; res.push(bal()); }
+  return res;
+}
+function pct(x) { return Math.round(x) + '%'; }
+function pts(n) { return n + (n === 1 ? ' point' : ' points'); }
+function article(w) { return /^[aeiou]/i.test(w) ? 'an' : 'a'; }
+function mateIn(ev) { return Math.max(1, Math.round((10000 - Math.abs(ev)) / 10)); }
+
+/* fork targets: valuable enemy pieces attacked by the piece on idx that are either worth more
+   than it or not protected, plus the king (a check). */
+function forkTargets(b, idx) {
+  const p = b[idx]; if (!p) return [];
+  const out = [];
+  attackSquares(b, idx).forEach(t => {
+    const q = b[t]; if (!q || q.c === p.c) return;
+    if (q.t === 'k') { out.push(t); return; }
+    if (q.t === 'p') return;
+    const undefended = attackersOf(b, t, q.c).length === 0;
+    if (PV[q.t] > PV[p.t] || undefended) out.push(t);
+  });
+  return out;
+}
+/* pins and skewers created by the slider on idx */
+function lineTactic(b, idx) {
+  const p = b[idx]; if (!p || (p.t !== 'r' && p.t !== 'b' && p.t !== 'q')) return null;
+  const dirs = p.t === 'r' ? RD : p.t === 'b' ? BD : RD.concat(BD);
+  const f = idx % 8, r = idx >> 3;
+  for (const d of dirs) {
+    let ff = f + d[0], rr = r + d[1], first = -1;
+    while (ff >= 0 && ff < 8 && rr >= 0 && rr < 8) {
+      const i = rr * 8 + ff, q = b[i];
+      if (q) {
+        if (first < 0) { if (q.c === p.c) break; first = i; }
+        else {
+          if (q.c === p.c) break;
+          const A = b[first];
+          if (q.t === 'k') return { kind: 'pin', front: first, back: i, absolute: true };
+          if (PV[q.t] > PV[A.t] && A.t !== 'k') return { kind: 'pin', front: first, back: i, absolute: false };
+          if (PV[A.t] > PV[q.t] && q.t !== 'p') return { kind: 'skewer', front: first, back: i };
+          break;
+        }
+      }
+      ff += d[0]; rr += d[1];
+    }
+  }
+  return null;
+}
+
+/* ---------- describing an engine idea in words ---------- */
+function describeIdea(fenBefore, uci) {
+  const c = new Chess(fenBefore);
+  const bb = fenToBoard(fenBefore);
+  const m = uciMove(c, uci); if (!m) return { san: uci, text: 'the engine’s top choice' };
+  const ba = fenToBoard(c.fen());
+  const to = sqIdx(m.to), from = sqIdx(m.from);
+  const me = m.color, name = PNAME[m.piece];
+  const reasons = [];
+  if (m.flags.indexOf('k') >= 0 || m.flags.indexOf('q') >= 0) reasons.push('tucking the king away and bringing a rook into the game');
+  else if (m.captured) reasons.push('capturing the ' + PNAME[m.captured] + ' on ' + m.to);
+  else {
+    const danger = seeGain(bb, from, other(me)) > 0 && m.piece !== 'p';
+    if (danger) reasons.push('moving your ' + name + ' out of danger');
+    else if (m.piece === 'p' && 'cdef'.indexOf(m.to[0]) >= 0 && /[3-6]/.test(m.to[1]) && Math.abs(+m.to[1] - +m.from[1]) >= 1 && 'de'.indexOf(m.to[0]) >= 0)
+      reasons.push('claiming space in the centre with a pawn');
+    else if ((m.piece === 'n' || m.piece === 'b') && (m.color === 'w' ? m.from[1] === '1' : m.from[1] === '8'))
+      reasons.push('developing a ' + name + ' (getting it off the back rank and into the game)');
+  }
+  const centre = ['d4', 'e4', 'd5', 'e5'].filter(s => attackSquares(ba, to).indexOf(sqIdx(s)) >= 0 && m.piece !== 'p');
+  if (m.piece !== 'p' && centre.length && !m.captured) reasons.push('also controlling ' + centre.slice(0, 2).join(' and '));
+  if (c.in_check()) reasons.push('also giving check');
+  if (!reasons.length) {
+    const tg = attackSquares(ba, to).map(t => ba[t]).filter(q => q && q.c !== me && q.t !== 'p' && q.t !== 'k');
+    if (tg.length) reasons.push('putting the ' + name + ' on ' + m.to + ', where it attacks the ' + PNAME[tg[0].t]);
+    else reasons.push('improving your ' + name + ' by placing it on ' + m.to);
+  }
+  return { san: m.san, text: reasons.join(', ') };
+}
+
+/* ---------- the coach ---------- */
+/* ctx: { fenBefore, fenAfter, color, played:{san,uci}, bestUci, bestPv, afterBest, afterPv,
+          moverBefore, moverAfter, fullmove, history:[verbose user moves before this one] }  */
+function buildLesson(ctx) {
+  const L = lessonFor(ctx);
+  const wb = winPct(ctx.moverBefore), wa = winPct(ctx.moverAfter);
+  L.winBefore = Math.round(wb); L.winAfter = Math.round(wa);
+  L.bestSan = ctx.bestUci ? (pvToSan(ctx.fenBefore, [ctx.bestUci], 1)[0] || ctx.bestUci) : null;
+  L.bestLine = ctx.bestPv && ctx.bestPv.length ? numberedLine(ctx.fenBefore, ctx.bestPv, 5) : '';
+  return L;
+}
+function lessonFor(ctx) {
+  const me = ctx.color, opp = other(me);
+  const bb = fenToBoard(ctx.fenBefore), ba = fenToBoard(ctx.fenAfter);
+  const wb = Math.round(winPct(ctx.moverBefore)), wa = Math.round(winPct(ctx.moverAfter));
+  const drop = 'Your win chance fell from ' + wb + '% to ' + wa + '%.';
+  const san = ctx.played.san;
+  const bestSan = ctx.bestUci ? (pvToSan(ctx.fenBefore, [ctx.bestUci], 1)[0] || ctx.bestUci) : null;
+  const mk = (type, cat, title, what, why, next) => ({ type, cat, title, what, why, next });
+
+  /* 1. walked into mate */
+  if (ctx.moverAfter <= -MATE_T && ctx.moverBefore > -MATE_T) {
+    const k = mateIn(ctx.moverAfter);
+    const line = ctx.afterPv && ctx.afterPv.length ? numberedLine(ctx.fenAfter, ctx.afterPv, 3) : '';
+    return mk('walked_into_mate', 'mate_allowed', 'Walked into checkmate',
+      'After ' + san + ', your opponent had a forced checkmate in ' + k + (line ? ' (' + line + ')' : '') + '.',
+      'A forced checkmate ends the game, so your win chance went from ' + wb + '% to ' + wa + '%.',
+      'Before every move, list your opponent’s checks first. If a check or a capture next to your king leads anywhere, change your move.');
+  }
+  /* 2. missed forced mate */
+  if (ctx.moverBefore >= MATE_T && ctx.bestUci && ctx.played.uci !== ctx.bestUci) {
+    const k = mateIn(ctx.moverBefore);
+    return mk('missed_mate', 'mate_missed', 'Missed a forced checkmate',
+      'You had a forced checkmate in ' + k + ' starting with ' + bestSan + ', but you played ' + san + '.',
+      'Checkmate wins on the spot, and ' + san + ' let it slip. ' + drop,
+      'When your opponent’s king looks exposed, list every check and every capture you have before anything quiet. Many mates start with a forcing move.');
+  }
+  /* 3. hung piece */
+  if (ctx.afterBest) {
+    const c2 = new Chess(ctx.fenAfter); const r = uciMove(c2, ctx.afterBest);
+    if (r && r.captured) {
+      const to = sqIdx(r.to), vic = ba[to];
+      if (vic && vic.c === me && vic.t !== 'p' && vic.t !== 'k') {
+        const gain = seeGain(ba, to, opp);
+        const defenders = attackersOf(ba, to, me).length;
+        const attVal = PV[r.piece];
+        if (gain >= 2 || (defenders === 0 && PV[vic.t] >= 3)) {
+          const nm = PNAME[vic.t];
+          const what = defenders === 0
+            ? 'After ' + san + ', your ' + nm + ' on ' + r.to + ' was attacked and nothing protected it, so ' + r.san + ' simply won it.'
+            : 'After ' + san + ', your ' + nm + ' on ' + r.to + ' could be taken by a ' + PNAME[r.piece] + ' worth only ' + pts(attVal) + ', so the exchange lost you material.';
+          return mk('hung_piece', 'hung', 'Left a piece to be captured', what,
+            'Your ' + nm + ' is worth ' + pts(PV[vic.t]) + ', so your opponent came out about ' + pts(Math.max(gain, 1)) + ' ahead. ' + drop,
+            defenders === 0
+              ? 'Before you move, check the square you are going to: is it attacked, and does anything of yours protect the piece you leave behind?'
+              : 'Count attackers against defenders. If a cheaper enemy piece can capture yours, the exchange is not worth it.');
+        }
+      }
+    }
+  }
+  /* 4. allowed a fork or check combination */
+  if (ctx.afterBest) {
+    const c2 = new Chess(ctx.fenAfter); const r = uciMove(c2, ctx.afterBest);
+    if (r) {
+      const b2 = fenToBoard(c2.fen()), to = sqIdx(r.to);
+      const mat = materialAlong(ctx.fenAfter, ctx.afterPv || [], me, 4);
+      const lost = mat[0] - Math.min.apply(null, mat.slice(1, 4).concat([mat[0]]));
+      if (lost >= 2 && r.piece !== 'p') {
+        const tg = forkTargets(b2, to).filter(t => b2[t].c === me);
+        if (tg.length >= 2) {
+          const names = tg.map(t => 'the ' + PNAME[b2[t].t] + ' on ' + sqName(t));
+          return mk('allowed_fork', 'allowed_tactic', 'Allowed a fork',
+            'After ' + san + ', ' + r.san + ' attacked ' + names.slice(0, 2).join(' and ') + ' at the same time. That is a fork: one piece hitting two targets, so you can only save one.',
+            'Your opponent could win about ' + pts(lost) + ' of material by force. ' + drop,
+            'Before every move, ask: what does my opponent’s best reply attack? Look especially for knight jumps and queen moves that hit two pieces at once.');
+        }
+        if (c2.in_check()) {
+          return mk('allowed_check_combo', 'allowed_tactic', 'Allowed a winning check',
+            'After ' + san + ', ' + r.san + ' came with check, and the forced reply cost you material.',
+            'A check must be answered at once, so your opponent gets a free follow-up: about ' + pts(lost) + ' of material. ' + drop,
+            'Before every move, list your opponent’s checks. Checks are forcing, so they are where combinations hide.');
+        }
+      }
+    }
+  }
+  /* 5. missed fork / pin / skewer, 6. missed capture */
+  if (ctx.bestUci && ctx.played.uci !== ctx.bestUci && ctx.bestPv && ctx.bestPv.length) {
+    const mat = materialAlong(ctx.fenBefore, ctx.bestPv, me, 3);
+    const gain = Math.max.apply(null, mat.slice(1)) - mat[0];
+    const c1 = new Chess(ctx.fenBefore); const rb = uciMove(c1, ctx.bestUci);
+    if (rb && gain >= 2) {
+      const b1 = fenToBoard(c1.fen()), to = sqIdx(rb.to);
+      const tg = forkTargets(b1, to).filter(t => b1[t].c === opp);
+      const line = numberedLine(ctx.fenBefore, ctx.bestPv, 4);
+      if (tg.length >= 2 && !rb.captured) {
+        const names = tg.slice(0, 2).map(t => 'the ' + PNAME[b1[t].t] + ' on ' + sqName(t));
+        return mk('missed_fork', 'missed_tactic', 'Missed a fork',
+          bestSan + ' would have attacked ' + names.join(' and ') + ' at once. That is a fork: one piece hitting two targets, so your opponent can only save one.',
+          'It wins about ' + pts(gain) + ' of material (' + line + '). ' + drop,
+          'Each move, scan for squares where one of your pieces would attack two things at once. Knights and queens fork most often.');
+      }
+      const lt = lineTactic(b1, to);
+      if (lt && !rb.captured) {
+        const A = PNAME[b1[lt.front].t], B = PNAME[b1[lt.back].t];
+        if (lt.kind === 'pin') {
+          return mk('missed_pin', 'missed_tactic', 'Missed a pin',
+            bestSan + ' would have pinned the ' + A + ' on ' + sqName(lt.front) + ' against the ' + B + ' behind it. A pin means the front piece cannot move without exposing the one behind.',
+            'The pin wins about ' + pts(gain) + ' of material (' + line + '). ' + drop,
+            'Look for enemy pieces that stand on the same line as a more valuable piece or the king. A bishop, rook or queen can pin them.');
+        }
+        return mk('missed_skewer', 'missed_tactic', 'Missed a skewer',
+          bestSan + ' would have attacked the ' + A + ' on ' + sqName(lt.front) + ', with a ' + B + ' behind it. A skewer forces the valuable front piece to move and then you take what is behind.',
+          'It wins about ' + pts(gain) + ' of material (' + line + '). ' + drop,
+          'Look for lines where a big piece stands in front of a smaller one. Attack the big one and collect the other.');
+      }
+      if (rb.captured || gain >= 2) {
+        const what = rb.captured
+          ? 'You could have won material with ' + bestSan + ', capturing the ' + PNAME[rb.captured] + ' on ' + rb.to + (attackersOf(b1, to, opp).length === 0 ? ', which nothing protected' : '') + '.'
+          : bestSan + ' set up a threat that wins about ' + pts(gain) + ' of material within a few moves.';
+        return mk('missed_capture', 'missed_capture', rb.captured ? 'Missed free material' : 'Missed a winning threat', what,
+          (rb.captured ? 'Taking it was worth about ' : 'The idea was worth about ') + pts(gain) + ' (' + line + '). You played ' + san + ' instead. ' + drop,
+          rb.captured ? 'Before every move, list all the captures available to both sides. If a piece is loose, ask why you are not taking it.'
+            : 'Before settling on a quiet move, ask what each of your pieces could attack next. A move that creates a threat your opponent cannot meet is often best.');
+      }
+    }
+  }
+  /* 7. opening slips */
+  const hist = ctx.history || [];
+  const mv = ctx.playedMove || {};
+  if (ctx.fullmove <= 10) {
+    for (let f = 3; f <= 4; f++) for (let r = 2; r <= 5; r++) {
+      const i = r * 8 + f; const p = ba[i];
+      if (p && p.c === me && p.t === 'p' && 'de'.indexOf(sqName(i)[0]) >= 0 && seeGain(ba, i, opp) >= 1)
+        return mk('opening_pawn', 'opening', 'Left a central pawn hanging',
+          'After ' + san + ', your pawn on ' + sqName(i) + ' could be captured for free.',
+          'Central pawns matter in the opening, and giving one away early usually costs the game a full point of material. ' + drop,
+          'In the opening, double-check that your d- and e-pawns are protected after every move.');
+    }
+  }
+  if (ctx.fullmove <= 8 && mv.piece === 'q' && !mv.captured) {
+    return mk('opening_queen', 'opening', 'Queen out too early',
+      'You moved your queen early with ' + san + ', before the other pieces were developed.',
+      'A queen in the open becomes a target: your opponent gains time by attacking it with smaller pieces. ' + drop,
+      'Develop knights and bishops first and castle. Bring the queen out only when it has a clear job.');
+  }
+  if (ctx.fullmove <= 10 && mv.piece && mv.piece !== 'p' && mv.piece !== 'q' && mv.piece !== 'k' && !mv.captured &&
+    hist.some(h => h.piece === mv.piece && h.to === mv.from)) {
+    const homeRank = me === 'w' ? 0 : 7;
+    const undeveloped = ba.filter((p, i) => p && p.c === me && (p.t === 'n' || p.t === 'b') && (i >> 3) === homeRank).length;
+    if (undeveloped >= 1)
+      return mk('opening_twice', 'opening', 'Moved the same piece twice',
+        'With ' + san + ' you moved the same ' + PNAME[mv.piece] + ' a second time while other pieces were still at home.',
+        'Each extra move with one piece is a move your opponent uses to develop another. ' + drop,
+        'In the opening, give each piece one good move before you move any of them twice, unless you are winning material or answering a threat.');
+  }
+  const kIdx = kingIdx(ba, me);
+  if (ctx.fullmove >= 12 && ctx.fullmove <= 20 && kIdx === (me === 'w' ? 4 : 60) && !hist.some(h => h.piece === 'k' || h.flags.indexOf('k') >= 0 || h.flags.indexOf('q') >= 0)) {
+    return mk('opening_king', 'opening', 'King still in the centre',
+      'By move ' + ctx.fullmove + ' your king was still on ' + sqName(kIdx) + ' and you played ' + san + ' instead of getting it to safety.',
+      'A king in the middle is exposed once files open up. ' + drop,
+      'Make castling a habit: by move 10, castle or have a clear reason not to.');
+  }
+  /* 8. endgame slips */
+  if (nonPawnMaterial(ba) <= 26) {
+    if (ctx.bestUci && ctx.played.uci !== ctx.bestUci) {
+      const c1 = new Chess(ctx.fenBefore); const rb = uciMove(c1, ctx.bestUci);
+      if (rb && rb.piece === 'p' && isPassed(bb, sqIdx(rb.from)))
+        return mk('endgame_passed', 'endgame', 'Did not push the passed pawn',
+          'You played ' + san + ' when ' + bestSan + ' pushed your passed pawn (a pawn with no enemy pawn able to stop it by capturing).',
+          'A passed pawn ties down the enemy king and often decides the endgame. ' + drop,
+          'In endgames, find your passed pawns first. Ask: can I push it, and can my king help?');
+      if (rb && rb.piece === 'k' && mv.piece !== 'k' && centreDist(sqIdx(rb.from)) >= 3)
+        return mk('endgame_king', 'endgame', 'King left far from the action',
+          'Your king stood on ' + rb.from + ', far from the centre, and you played ' + san + ' instead of ' + bestSan + '.',
+          'In the endgame the king is a strong piece and should join the fight. ' + drop,
+          'When queens are off, march your king toward the centre and the pawns. Treat it as an extra attacker.');
+    }
+  }
+  /* 9. positional fallback */
+  const idea = ctx.bestUci ? describeIdea(ctx.fenBefore, ctx.bestUci) : null;
+  return mk('positional', 'positional', 'Positional slip',
+    idea ? 'The engine preferred ' + idea.san + ', ' + idea.text + ', rather than ' + san + '.' : san + ' was weaker than the engine’s choice.',
+    'Nothing was lost on the spot, but the position got worse step by step. ' + drop,
+    'Before each move, ask what your worst-placed piece is, and whether this move improves it or just waits.');
+}
+
+/* ---------- PGN, games, scoring a whole game ---------- */
+function parseOpening(ecoUrl, ecoCode) {
+  if (!ecoUrl) return ecoCode ? 'ECO ' + ecoCode : 'Unknown opening';
+  let seg = ecoUrl.split('/').pop();
+  try { seg = decodeURIComponent(seg); } catch (e) { /* keep raw */ }
+  const dots = seg.indexOf('...'); if (dots > 0) seg = seg.slice(0, dots);
+  const words = [];
+  for (const w of seg.split('-')) { if (/\d/.test(w)) break; words.push(w); if (words.length === 3) break; }
+  return words.length ? words.join(' ') : (ecoCode ? 'ECO ' + ecoCode : 'Unknown opening');
+}
+const DRAW_RES = ['agreed', 'repetition', 'stalemate', 'insufficient', '50move', 'timevsinsufficient'];
+function pgnHeader(pgn, key) {
+  const m = pgn.match(new RegExp('\\[' + key + ' "([^"]*)"\\]')); return m ? m[1] : '';
+}
+function normalizeGame(g, user) {
+  const u = user.toLowerCase();
+  const isWhite = (g.white.username || '').toLowerCase() === u;
+  const me = isWhite ? g.white : g.black, op = isWhite ? g.black : g.white;
+  const result = me.result === 'win' ? 'win' : DRAW_RES.indexOf(me.result) >= 0 ? 'draw' : 'loss';
+  const pgn = g.pgn || '';
+  return {
+    url: g.url, pgn, isWhite, result, rawResult: me.result,
+    opening: parseOpening(pgnHeader(pgn, 'ECOUrl'), pgnHeader(pgn, 'ECO')),
+    timeClass: g.time_class, endTime: g.end_time || 0,
+    opp: { name: op.username, rating: op.rating }, myRating: me.rating,
+    accuracyReported: g.accuracies ? (isWhite ? g.accuracies.white : g.accuracies.black) : null
+  };
+}
+function mergeGames(lists) {
+  const seen = {}, out = [];
+  for (const l of lists) for (const g of l) { if (g.rules !== 'chess' || !g.url || seen[g.url]) continue; seen[g.url] = 1; out.push(g); }
+  out.sort((a, b) => (b.end_time || 0) - (a.end_time || 0));
+  return out;
+}
+function replayPgn(pgn) {
+  const c = new Chess();
+  if (!c.load_pgn(pgn, { sloppy: true })) throw new Error('This game’s PGN could not be read.');
+  const moves = c.history({ verbose: true });
+  if (!moves.length) throw new Error('This game has no moves.');
+  const r = new Chess(), fens = [r.fen()];
+  for (const m of moves) { r.move(m.san); fens.push(r.fen()); }
+  return { moves, fens };
+}
+function terminalEval(fen) {
+  const c = new Chess(fen);
+  if (!c.game_over()) return null;
+  if (c.in_checkmate()) return c.turn() === 'w' ? -10000 : 10000;
+  return 0;
+}
+/* raw = { ev:[white cp per position], best:[uci|null], pv:[[uci...]] }  */
+function analyzeGame(pgn, userIsWhite, raw) {
+  const { moves, fens } = replayPgn(pgn);
+  const userColor = userIsWhite ? 'w' : 'b';
+  const out = [], hist = [];
+  for (let p = 0; p < moves.length; p++) {
+    const m = moves[p], color = m.color, isUser = color === userColor;
+    const uci = m.from + m.to + (m.promotion || '');
+    const evB = raw.ev[p], evA = raw.ev[p + 1];
+    const mb = color === 'w' ? evB : -evB, ma = color === 'w' ? evA : -evA;
+    const loss = Math.max(0, winPct(mb) - winPct(ma));
+    const isBest = raw.best[p] && raw.best[p] === uci;
+    const cls = classify(loss, !!isBest);
+    const fullmove = Math.floor(p / 2) + 1;
+    const rec = {
+      ply: p, fullmove, color, isUser, san: m.san, uci, from: m.from, to: m.to, piece: m.piece,
+      fenBefore: fens[p], fenAfter: fens[p + 1], evBefore: evB, evAfter: evA, moverBefore: mb, moverAfter: ma,
+      loss, cls, acc: moveAccuracy(loss), phase: phaseOf(fullmove),
+      bestUci: raw.best[p] || null, bestPv: raw.pv[p] || [], lesson: null
+    };
+    rec.bestSan = rec.bestUci ? (pvToSan(fens[p], [rec.bestUci], 1)[0] || rec.bestUci) : null;
+    rec.bestLineSan = rec.bestPv.length ? numberedLine(fens[p], rec.bestPv, 5) : '';
+    if (isUser && loss >= 10) {
+      try {
+        rec.lesson = buildLesson({
+          fenBefore: fens[p], fenAfter: fens[p + 1], color, played: { san: m.san, uci }, playedMove: m,
+          bestUci: rec.bestUci, bestPv: rec.bestPv, afterBest: raw.best[p + 1] || null, afterPv: raw.pv[p + 1] || [],
+          moverBefore: mb, moverAfter: ma, fullmove, history: hist.slice()
+        });
+      } catch (e) { rec.lesson = null; }
+    }
+    if (isUser) hist.push(m);
+    out.push(rec);
+  }
+  const mine = out.filter(x => x.isUser);
+  const accuracy = mine.length ? mine.reduce((s, x) => s + x.acc, 0) / mine.length : null;
+  return { moves: out, accuracy, fens };
+}
+
+/* ---------- aggregation ---------- */
+function recordOf(games) {
+  const r = { w: 0, d: 0, l: 0, n: games.length };
+  games.forEach(g => { if (g.result === 'win') r.w++; else if (g.result === 'draw') r.d++; else r.l++; });
+  return r;
+}
+function mean(a) { return a.length ? a.reduce((s, x) => s + x, 0) / a.length : null; }
+function openingTable(games, analysisByUrl) {
+  const map = {};
+  games.forEach(g => {
+    const o = map[g.opening] || (map[g.opening] = { name: g.opening, n: 0, w: 0, d: 0, l: 0, accs: [] });
+    o.n++; if (g.result === 'win') o.w++; else if (g.result === 'draw') o.d++; else o.l++;
+    const a = analysisByUrl[g.url]; if (a && a.accuracy != null) o.accs.push(a.accuracy);
+  });
+  return Object.values(map).map(o => ({ name: o.name, n: o.n, w: o.w, d: o.d, l: o.l, acc: mean(o.accs), accN: o.accs.length }))
+    .sort((a, b) => b.n - a.n || a.name.localeCompare(b.name));
+}
+const PHASES = ['opening', 'middlegame', 'endgame'];
+function aggregate(entries) { /* entries: [{game, analysis}] */
+  const res = { games: entries.length };
+  const accOf = list => mean(list.filter(e => e.analysis.accuracy != null).map(e => e.analysis.accuracy));
+  res.acc = accOf(entries);
+  res.accWhite = accOf(entries.filter(e => e.game.isWhite));
+  res.accBlack = accOf(entries.filter(e => !e.game.isWhite));
+  let bl = 0, mi = 0;
+  const ph = { opening: { m: 0, bad: 0 }, middlegame: { m: 0, bad: 0 }, endgame: { m: 0, bad: 0 } };
+  const cats = {}; const costly = [];
+  entries.forEach(e => e.analysis.moves.forEach(x => {
+    if (!x.isUser) return;
+    ph[x.phase].m++;
+    if (x.cls === 'blunder') bl++; if (x.cls === 'mistake') mi++;
+    if (x.cls === 'blunder' || x.cls === 'mistake') {
+      ph[x.phase].bad++;
+      const cat = x.lesson ? x.lesson.cat : 'positional';
+      cats[cat] = (cats[cat] || 0) + 1;
+      costly.push({ game: e.game, move: x });
+    }
+  }));
+  res.blundersPerGame = entries.length ? bl / entries.length : 0;
+  res.mistakesPerGame = entries.length ? mi / entries.length : 0;
+  res.phase = {}; PHASES.forEach(p => { res.phase[p] = { moves: ph[p].m, bad: ph[p].bad, rate: ph[p].m ? ph[p].bad * 100 / ph[p].m : null }; });
+  res.cats = cats;
+  res.costliest = costly.sort((a, b) => b.move.loss - a.move.loss).slice(0, 5);
+  return res;
+}
+const TRAINING = {
+  phase: {
+    opening: 'Pick one setup you play with each colour and learn its first six to eight moves and the plans behind them. In every game, develop your knights and bishops, castle by move 10, and avoid moving a piece twice. On Lichess, practise the "Opening" puzzle theme.',
+    middlegame: 'Spend ten minutes a day on tactics puzzles, mixed themes at a comfortable level, on Chess.com or Lichess. Before each move in your own games, check what your opponent’s last move attacks and what you leave undefended.',
+    endgame: 'Study the basics: king and pawn against king (the opposition), then the Lucena and Philidor rook endgames. On Lichess, use Practice, then Basic endgames, and try the "Endgame" puzzle theme. Keep your king active once queens are off.'
+  },
+  cat: {
+    mate_missed: 'Practise "Mate in 1" and "Mate in 2" puzzles on Lichess or Chess.com until forcing checks come to mind first. In games, list every check before you decide on a quiet move.',
+    mate_allowed: 'Practise "Defensive move" and "Mate in 1" puzzles. In your games, before each move, list your opponent’s checks and captures near your king.',
+    hung: 'Train on the "Hanging piece" and "Capturing defender" themes on Lichess. Build a blunder-check habit: before you move, name the piece you just moved and every piece of yours that is attacked.',
+    allowed_tactic: 'Practise the "Fork" and "Discovered attack" themes, then ask before every move: after my move, where could a knight or queen jump to hit two things?',
+    missed_tactic: 'Drill the "Fork", "Pin" and "Skewer" puzzle themes on Lichess or Chess.com. In games, scan for squares where one of your pieces would hit two targets before you play a quiet move.',
+    missed_capture: 'Practise the "Hanging piece" and "Advantage" themes, and make "what is loose?" your first question each turn: list every unprotected enemy piece before choosing a move.',
+    opening: 'Write down a short checklist and read it before move 5: develop the pieces, fight for the centre, castle, then connect the rooks. Do not move the queen early or the same piece twice.',
+    endgame: 'Study king and pawn endgames, passed pawns and rook endgames (Lucena, Philidor). Practise the "Pawn endgame" and "Advanced pawn" puzzle themes.',
+    positional: 'Play slower, quieter moves with a plan: improve your worst piece, take open files with rooks, and keep your pieces protected. Review your games on the lost-evaluation moments and ask what the engine’s move improves.'
+  },
+  opening: 'Review your last games in this opening with the engine, find where you first left good play, and learn the correct next three moves. Make one fixed reply for each of your opponent’s common choices, rather than improvising.'
+};
+function weaknesses(agg, openings) {
+  const out = []; let strength = null;
+  const phases = PHASES.filter(p => agg.phase[p].moves >= 10);
+  if (phases.length) {
+    const sorted = phases.slice().sort((a, b) => agg.phase[b].rate - agg.phase[a].rate);
+    const w = sorted[0];
+    out.push({
+      kind: 'phase', score: agg.phase[w].rate, title: 'Your ' + w + ' phase',
+      numbers: agg.phase[w].bad + ' mistakes and blunders in ' + agg.phase[w].moves + ' moves, or ' + agg.phase[w].rate.toFixed(1) + ' per 100 moves.',
+      advice: TRAINING.phase[w]
+    });
+    if (sorted.length > 1 && agg.phase[w].rate - agg.phase[sorted[sorted.length - 1]].rate >= 3) {
+      const s = sorted[sorted.length - 1];
+      strength = { title: 'Your ' + s + ' phase', numbers: agg.phase[s].rate.toFixed(1) + ' mistakes and blunders per 100 moves, your lowest of the three phases.' };
+    }
+  }
+  const cats = Object.keys(agg.cats).sort((a, b) => agg.cats[b] - agg.cats[a]);
+  if (cats.length) {
+    const c = cats[0]; const total = Object.values(agg.cats).reduce((s, x) => s + x, 0);
+    out.push({
+      kind: 'type', score: agg.cats[c] / total * 100, title: CAT_LABEL[c],
+      numbers: agg.cats[c] + ' of your ' + total + ' mistakes and blunders (' + Math.round(agg.cats[c] / total * 100) + '%).',
+      advice: TRAINING.cat[c]
+    });
+  }
+  const ops = openings.filter(o => o.accN >= 2 && o.acc != null).sort((a, b) => a.acc - b.acc);
+  if (ops.length) {
+    const o = ops[0];
+    out.push({
+      kind: 'opening', score: 100 - o.acc, title: 'Opening: ' + o.name,
+      numbers: 'Average accuracy ' + o.acc.toFixed(1) + '% over ' + o.accN + ' analyzed games (record ' + o.w + '-' + o.d + '-' + o.l + ').',
+      advice: TRAINING.opening
+    });
+    if (!strength && ops.length > 1) {
+      const b = ops[ops.length - 1];
+      strength = { title: 'Opening: ' + b.name, numbers: 'Average accuracy ' + b.acc.toFixed(1) + '% over ' + b.accN + ' analyzed games.' };
+    }
+  }
+  return { weak: out.slice(0, 3), strength };
+}
+
+/* ---------- training puzzles ---------- */
+function buildPuzzles(entries) {
+  const seen = {}, list = [];
+  entries.forEach(e => e.analysis.moves.forEach(x => {
+    if (!x.isUser || x.loss < 10 || !x.bestUci) return;
+    const key = x.fenBefore.split(' ').slice(0, 4).join(' ');
+    if (seen[key]) return; seen[key] = 1;
+    list.push({
+      id: e.game.url + '#' + x.ply, url: e.game.url, ply: x.ply, fen: x.fenBefore, side: x.color,
+      bestUci: x.bestUci, bestSan: x.bestSan, bestLine: x.bestLineSan, playedSan: x.san,
+      moverBefore: x.moverBefore, loss: x.loss, cls: x.cls, lesson: x.lesson
+    });
+  }));
+  return list.sort((a, b) => b.loss - a.loss);
+}
+function puzzleAccepts(puz, uci, moverEvAfter) {
+  if (uci === puz.bestUci) return true;
+  if (moverEvAfter == null) return false;
+  return winPct(puz.moverBefore) - winPct(moverEvAfter) <= 3;
+}
+/*CORE-END*/
+
+/* ================= app ================= */
+const $ = id => document.getElementById(id);
+const JSD = 'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/';
+/* Same Stockfish 10.0.2 in three forms. WebAssembly is tried first because it is 10 to 20 times faster than the asm.js build. */
+const SF_SOURCES = [
+  { kind: 'WebAssembly', url: JSD + 'stockfish.wasm.js', base: JSD },
+  { kind: 'asm.js', url: 'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js' },
+  { kind: 'asm.js', url: JSD + 'stockfish.js' }
+];
+const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
+const VS15 = '︎';
+const S = {
+  user: '', games: [], analyses: {}, raws: {}, filter: 'all', depth: 10, busy: false, stop: false,
+  rv: null, train: { queue: [], i: 0, sel: null, state: 'idle', solved: 0, missed: 0, mode: 'all', busy: false, puz: null, lastMsg: '' },
+  timings: [], offlineNote: ''
+};
+
+/* ---------- storage (always guarded) ---------- */
+const store = {
+  get(k) { try { const v = localStorage.getItem(k); return v == null ? null : JSON.parse(v); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); return true; } catch (e) { return false; } },
+  del(k) { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } }
+};
+const rawKey = (url, d) => 'pm1:raw:' + url + ':' + d;
+function findRaw(url) {
+  const order = [S.depth, 13, 10, 8].filter((d, i, a) => a.indexOf(d) === i);
+  for (const d of order) { const r = store.get(rawKey(url, d)); if (r && r.ev) return { raw: r, depth: d }; }
+  return null;
+}
+
+/* ---------- messages and progress ---------- */
+function showMsg(text, kind) {
+  const el = $('msg'); el.innerHTML = '';
+  if (!text) return;
+  const d = document.createElement('div'); d.className = 'note ' + (kind || ''); d.textContent = text; el.appendChild(d);
+}
+function setProgress(txt, frac) {
+  $('progress').hidden = txt == null;
+  if (txt != null) { $('progTxt').textContent = txt; $('progBar').style.width = Math.round((frac || 0) * 100) + '%'; }
+}
+
+/* ---------- engine ---------- */
+const engine = {
+  w: null, ready: null, url: null,
+  async startWorker(src) {
+    const r = await fetch(src.url);
+    if (!r.ok) throw new Error('HTTP ' + r.status + ' for ' + src.url);
+    let text = await r.text();
+    if (text.length < 10000) throw new Error('unexpected file from ' + src.url);
+    if (src.base) {
+      /* a blob worker cannot find stockfish.wasm next to itself, so point it at the CDN folder */
+      const patched = text.replace('locateFile:function(e){return e}', 'locateFile:function(e){return "' + src.base + '"+e}');
+      if (patched === text) throw new Error('could not point the WebAssembly build at its .wasm file');
+      text = patched;
+    }
+    const w = new Worker(URL.createObjectURL(new Blob([text], { type: 'application/javascript' })));
+    try {
+      await new Promise((res, rej) => {
+        const t = setTimeout(() => rej(new Error('no answer within 20 seconds')), 20000);
+        w.onerror = ev => { clearTimeout(t); rej(new Error('crashed while starting: ' + (ev.message || 'unknown error'))); };
+        w.onmessage = ev => { if (String(ev.data).indexOf('uciok') >= 0) { clearTimeout(t); res(); } };
+        w.postMessage('uci');
+      });
+    } catch (e) { w.terminate(); throw e; }
+    return w;
+  },
+  init() {
+    if (this.ready) return this.ready;
+    this.ready = (async () => {
+      const errs = [];
+      for (const src of SF_SOURCES) {
+        try {
+          const w = await this.startWorker(src);
+          this.w = w; this.kind = src.kind; this.url = src.url;
+          console.log('[post-mortem] Stockfish ' + src.kind + ' from ' + src.url);
+          w.postMessage('setoption name Hash value 16');
+          return true;
+        } catch (e) { errs.push(src.kind + ': ' + e.message); }
+      }
+      throw new Error('Stockfish could not be loaded from the CDNs (' + errs.join('; ') + ').');
+    })();
+    this.ready.catch(() => { this.ready = null; });
+    return this.ready;
+  },
+  /* returns { cp (White's view), best, pv } */
+  async evalFen(fen, depth) {
+    await this.init();
+    const w = this.w, whiteToMove = fen.split(' ')[1] === 'w';
+    return new Promise((resolve, reject) => {
+      let last = null, soft = null, hard = null;
+      const done = (fn, v) => { clearTimeout(soft); clearTimeout(hard); w.onmessage = null; w.onerror = null; this.cancel = null; fn(v); };
+      w.onerror = ev => done(reject, new Error('Stockfish crashed: ' + (ev.message || 'unknown')));
+      w.onmessage = ev => {
+        const line = String(ev.data);
+        if (line.indexOf('info ') === 0) { const p = parseInfoLine(line); if (p && p.pv.length) last = p; else if (p && !last) last = p; return; }
+        if (line.indexOf('bestmove') === 0) {
+          const bm = line.split(' ')[1];
+          const best = bm && bm !== '(none)' ? bm : null;
+          if (!last) return done(resolve, { cp: 0, best, pv: best ? [best] : [] });
+          const pv = last.pv.length ? last.pv : (best ? [best] : []);
+          done(resolve, { cp: scoreToWhite(last.kind, last.val, whiteToMove), best: best || pv[0] || null, pv });
+        }
+      };
+      this.cancel = () => w.postMessage('stop');
+      soft = setTimeout(() => w.postMessage('stop'), 25000);
+      hard = setTimeout(() => done(reject, new Error('Stockfish stopped responding.')), 40000);
+      w.postMessage('position fen ' + fen);
+      w.postMessage('go depth ' + depth);
+    });
+  },
+  reset() { try { if (this.w) this.w.terminate(); } catch (e) { /* ignore */ } this.w = null; this.ready = null; }
+};
+
+/* ---------- loading games ---------- */
+function monthList(ym, n) {
+  const [y, m] = ym.split('-').map(Number); const out = [];
+  for (let i = 0; i < n; i++) { const d = new Date(Date.UTC(y, m - 1 - i, 1)); out.push(d.getUTCFullYear() + '/' + String(d.getUTCMonth() + 1).padStart(2, '0')); }
+  return out;
+}
+async function fetchMonth(user, ym) {
+  const r = await fetch('https://api.chess.com/pub/player/' + encodeURIComponent(user) + '/games/' + ym);
+  if (r.status === 404) return { status: 404, games: [] };
+  if (r.status === 429) { const e = new Error('Chess.com is limiting requests right now (HTTP 429). Wait a minute and try again.'); e.http = 429; throw e; }
+  if (!r.ok) { const e = new Error('Chess.com answered with HTTP ' + r.status + ' for ' + ym + '.'); e.http = r.status; throw e; }
+  let j; try { j = await r.json(); } catch (e) { throw new Error('Chess.com sent a reply that could not be read for ' + ym + '.'); }
+  return { status: 200, games: Array.isArray(j.games) ? j.games : [] };
+}
+function loadSaved(user) {
+  const sv = store.get('pm1:games:' + user.toLowerCase());
+  return sv && Array.isArray(sv.games) ? sv.games : null;
+}
+async function loadGames(ev) {
+  if (ev) ev.preventDefault();
+  if (S.busy) return;
+  const user = $('user').value.trim().toLowerCase();
+  const ym = $('month').value;
+  if (!user) { showMsg('Enter your Chess.com username.', 'error'); return; }
+  if (!/^\d{4}-\d{2}$/.test(ym)) { showMsg('Pick a month.', 'error'); return; }
+  S.depth = +$('depth').value;
+  store.set('pm1:user', user);
+  showMsg('');
+  $('loadBtn').disabled = true; setProgress('Loading games from Chess.com...', 0.05);
+  const months = monthList(ym, +$('months').value);
+  const lists = []; let okCount = 0, notFound = 0, firstErr = null;
+  try {
+    for (let i = 0; i < months.length; i++) {
+      setProgress('Loading ' + months[i] + '...', 0.1 + 0.8 * i / months.length);
+      try {
+        const r = await fetchMonth(user, months[i]);
+        if (r.status === 404) notFound++; else okCount++;
+        lists.push(r.games);
+      } catch (e) {
+        if (!firstErr) firstErr = e;
+        if (e.http === 429) break;
+      }
+    }
+  } finally { setProgress(null); $('loadBtn').disabled = false; }
+  const merged = mergeGames(lists);
+  if (!merged.length) {
+    if (firstErr) {
+      const offline = !navigator.onLine || firstErr instanceof TypeError;
+      const saved = loadSaved(user);
+      if (offline && saved && saved.length) {
+        S.user = user; S.games = saved; S.offlineNote = 'You appear to be offline, so these are the games saved on this device.';
+        afterGamesLoaded(); showMsg(S.offlineNote, 'warn'); return;
+      }
+      showMsg(offline ? 'Could not reach Chess.com. Check your connection and try again.' : firstErr.message, 'error');
+      return;
+    }
+    if (notFound === months.length) {
+      try {
+        const pr = await fetch('https://api.chess.com/pub/player/' + encodeURIComponent(user));
+        if (pr.status === 404) { showMsg('Chess.com has no player called "' + user + '". Check the spelling of the username.', 'error'); return; }
+      } catch (e) { /* fall through to the generic message */ }
+    }
+    showMsg('No standard chess games found for ' + user + ' in the months you picked. Try another month.', 'warn');
+    S.user = user; S.games = []; afterGamesLoaded(); return;
+  }
+  S.user = user;
+  S.games = merged.map(g => normalizeGame(g, user));
+  S.offlineNote = '';
+  if (firstErr) showMsg('Some months could not be loaded: ' + firstErr.message, 'warn');
+  if (!store.set('pm1:games:' + user, { games: S.games, at: Date.now() })) {
+    /* storage full: keep only the games that have saved analyses */
+    const keep = S.games.filter(g => findRaw(g.url)); store.set('pm1:games:' + user, { games: keep, at: Date.now() });
+  }
+  afterGamesLoaded();
+}
+function afterGamesLoaded() {
+  S.analyses = {};
+  S.games.forEach(g => { const f = findRaw(g.url); if (f) tryAnalyze(g, f.raw); });
+  const tcs = Array.from(new Set(S.games.map(g => g.timeClass))).filter(Boolean);
+  const sel = $('tcFilter'); sel.innerHTML = '<option value="all">All</option>' + tcs.map(t => '<option value="' + t + '">' + t[0].toUpperCase() + t.slice(1) + '</option>').join('');
+  S.filter = 'all';
+  renderGames(); renderPatterns(); renderTrainIfVisible();
+}
+function tryAnalyze(g, raw) {
+  try { S.analyses[g.url] = analyzeGame(g.pgn, g.isWhite, raw); g.bad = null; return true; }
+  catch (e) { g.bad = e.message || 'Could not read this game.'; return false; }
+}
+
+/* ---------- analysis ---------- */
+class Stopped extends Error {}
+async function computeRaw(g, depth, onStep) {
+  const { fens } = replayPgn(g.pgn);
+  const ev = [], best = [], pv = [];
+  for (let i = 0; i < fens.length; i++) {
+    if (S.stop) throw new Stopped();
+    const t = terminalEval(fens[i]);
+    if (t !== null) { ev.push(t); best.push(null); pv.push([]); }
+    else {
+      const r = await engine.evalFen(fens[i], depth);
+      ev.push(r.cp); best.push(r.best); pv.push(r.pv.slice(0, 6));
+    }
+    onStep(i + 1, fens.length);
+  }
+  return { ev, best, pv, depth };
+}
+async function analyzeList(list) {
+  if (S.busy || !list.length) return;
+  S.busy = true; S.stop = false; S.timings = [];
+  const depth = S.depth; let done = 0;
+  updateButtons();
+  try {
+    setProgress('Starting Stockfish...', 0);
+    try { await engine.init(); }
+    catch (e) { showMsg('' + e.message + ' Games cannot be analyzed until Stockfish loads. Check your connection and try again.', 'error'); return; }
+    for (const g of list) {
+      if (S.stop) break;
+      const t0 = performance.now();
+      try {
+        const raw = await computeRaw(g, depth, (i, n) => setProgress('Game ' + (done + 1) + ' of ' + list.length + ': position ' + i + ' of ' + n, (done + i / n) / list.length));
+        store.set(rawKey(g.url, depth), raw);
+        S.raws[g.url] = raw; tryAnalyze(g, raw);
+        const secs = (performance.now() - t0) / 1000; S.timings.push(secs);
+        console.log('[post-mortem] analyzed ' + g.url + ' depth ' + depth + ' in ' + secs.toFixed(1) + 's');
+      } catch (e) {
+        if (e instanceof Stopped) break;
+        if (/PGN|moves/.test(e.message || '')) { g.bad = e.message; }
+        else { showMsg('Analysis failed: ' + e.message, 'error'); engine.reset(); break; }
+      }
+      done++;
+      renderGames();
+    }
+  } finally {
+    S.busy = false; setProgress(null); updateButtons(); renderGames(); renderPatterns(); renderTrainIfVisible();
+    if (S.timings.length) {
+      const avg = S.timings.reduce((a, b) => a + b, 0) / S.timings.length;
+      showMsg((S.stop ? 'Stopped. ' : '') + 'Analyzed ' + S.timings.length + ' game' + (S.timings.length === 1 ? '' : 's') + ' at depth ' + depth + ' with Stockfish ' + (engine.kind || '') + ', about ' + avg.toFixed(0) + ' seconds per game.', 'info');
+    } else if (S.stop) showMsg('Stopped.', 'info');
+  }
+}
+function updateButtons() {
+  const un = filteredGames().filter(g => !S.analyses[g.url] && !g.bad);
+  const b = $('analyzeAll'); b.disabled = S.busy || !un.length;
+  b.textContent = un.length ? 'Analyze ' + un.length + ' unreviewed' : 'Analyze unreviewed';
+  document.querySelectorAll('li.game button[data-act]').forEach(x => { x.disabled = S.busy && x.dataset.act === 'analyze'; });
+}
+
+/* ---------- Games tab ---------- */
+function filteredGames() { return S.games.filter(g => S.filter === 'all' || g.timeClass === S.filter); }
+function fmtDate(ts) { return ts ? new Date(ts * 1000).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : ''; }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+function renderGames() {
+  const list = filteredGames();
+  const rec = (arr) => { const r = recordOf(arr); return r.w + '-' + r.d + '-' + r.l; };
+  $('chips').innerHTML = S.games.length
+    ? ['Overall', 'As White', 'As Black'].map((l, i) => {
+      const arr = i === 0 ? list : list.filter(g => (i === 1) === g.isWhite);
+      return '<span class="chip">' + l + ' <b>' + rec(arr) + '</b> <span class="muted">(' + arr.length + ')</span></span>';
+    }).join('') + '<span class="chip muted">wins-draws-losses</span>' : '';
+  const ul = $('gameList');
+  if (!S.games.length) { ul.innerHTML = '<li class="empty">No games to show yet.</li>'; updateButtons(); return; }
+  ul.innerHTML = list.map(g => {
+    const a = S.analyses[g.url];
+    const resLbl = g.result === 'win' ? 'Win' : g.result === 'draw' ? 'Draw' : 'Loss';
+    return '<li class="game"><div><div class="title">' + esc(g.opening) + '</div><div class="meta">' + esc(fmtDate(g.endTime)) + ' &middot; ' + esc(g.timeClass) + ' &middot; as ' + (g.isWhite ? 'White' : 'Black') + ' vs ' + esc(g.opp.name) + ' (' + esc(g.opp.rating) + ')' +
+      (g.bad ? ' &middot; <span style="color:var(--blunder)">' + esc(g.bad) + '</span>' : '') + '</div></div>' +
+      '<div class="side"><span class="res ' + g.result + '">' + resLbl + '</span>' + (a && a.accuracy != null ? '<span class="acc" title="Your accuracy in this game">' + a.accuracy.toFixed(0) + '%</span>' : '') +
+      '<button class="btn small ' + (a ? '' : 'primary') + '" data-act="' + (a ? 'review' : 'analyze') + '" data-url="' + esc(g.url) + '"' + (g.bad ? ' disabled' : '') + '>' + (a ? 'Review' : 'Analyze') + '</button></div></li>';
+  }).join('') || '<li class="empty">No games for this time control.</li>';
+  updateButtons();
+}
+async function analyzeOne(url) {
+  const g = S.games.find(x => x.url === url); if (!g) return;
+  await analyzeList([g]);
+  if (S.analyses[url]) openReview(url);
+}
+
+/* ---------- tabs ---------- */
+function showTab(name) {
+  document.querySelectorAll('nav.tabs button').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === name)));
+  document.querySelectorAll('section.tab').forEach(s => { s.hidden = s.id !== 'tab-' + name; });
+  S.tab = name;
+  if (name === 'patterns') renderPatterns();
+  if (name === 'train') renderTrain(true);
+  if (name === 'review') renderReview();
+}
+
+/* ---------- board ---------- */
+function boardHTML(fen, o) {
+  const b = fenToBoard(fen), flip = !!o.flip; let h = '';
+  for (let row = 0; row < 8; row++) for (let col = 0; col < 8; col++) {
+    const f = flip ? 7 - col : col, r = flip ? row : 7 - row, i = r * 8 + f, nm = sqName(i), p = b[i];
+    const dark = (f + r) % 2 === 0;
+    const hl = o.last && (o.last[0] === nm || o.last[1] === nm);
+    let cls = 'sq' + (dark ? ' d' : '') + (hl ? ' hl ' + (o.lastCls || '') : '') + (o.sel === nm ? ' sel' : '') + (o.targets && o.targets[nm] ? ' tgt' + (p ? ' cap' : '') : '');
+    h += '<button type="button" class="' + cls + '" data-sq="' + nm + '" aria-label="' + nm + (p ? ' ' + (p.c === 'w' ? 'white ' : 'black ') + PNAME[p.t] : '') + '">' +
+      (p ? '<span class="pc ' + p.c + '">' + GLYPH[p.t] + VS15 + '</span>' : '') +
+      (row === 7 ? '<i class="co f">' + 'abcdefgh'[f] + '</i>' : '') + (col === 0 ? '<i class="co r">' + (r + 1) + '</i>' : '') + '</button>';
+  }
+  return h;
+}
+function arrowSVG(from, to, flip) {
+  if (!from || !to) return '';
+  const pos = nm => { const f = 'abcdefgh'.indexOf(nm[0]), r = +nm[1] - 1; return [(flip ? 7 - f : f) + .5, (flip ? r : 7 - r) + .5]; };
+  const a = pos(from), b = pos(to);
+  const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
+  const head = .42, wid = .3, sx = a[0] + ux * .25, sy = a[1] + uy * .25, ex = b[0] - ux * head, ey = b[1] - uy * head;
+  const px = -uy, py = ux;
+  return '<line x1="' + sx + '" y1="' + sy + '" x2="' + ex + '" y2="' + ey + '" stroke="#2E8B57" stroke-width=".2" stroke-linecap="round" opacity=".9"/>' +
+    '<polygon fill="#2E8B57" opacity=".9" points="' + b[0] + ',' + b[1] + ' ' + (ex + px * wid) + ',' + (ey + py * wid) + ' ' + (ex - px * wid) + ',' + (ey - py * wid) + '"/>';
+}
+function fmtEval(cp) {
+  if (Math.abs(cp) >= MATE_T) return (cp > 0 ? '+' : '-') + 'M' + mateIn(cp);
+  return (cp > 0 ? '+' : cp < 0 ? '-' : '') + Math.abs(cp / 100).toFixed(1);
+}
+
+/* ---------- Review ---------- */
+function openReview(url, ply) {
+  const g = S.games.find(x => x.url === url), a = S.analyses[url]; if (!g || !a) return;
+  let cur;
+  if (ply != null) cur = ply + 1;
+  else {
+    const fm = a.moves.find(m => m.isUser && (m.cls === 'mistake' || m.cls === 'blunder')) || a.moves.find(m => m.isUser && m.cls === 'inaccuracy');
+    cur = fm ? fm.ply + 1 : 0;
+  }
+  S.rv = { g, a, cur, flip: !g.isWhite, showBest: false };
+  $('showBest').checked = false;
+  showTab('review');
+}
+function rvGo(to) {
+  const rv = S.rv; if (!rv) return;
+  rv.cur = Math.max(0, Math.min(rv.a.moves.length, to)); renderReview();
+}
+function renderReview() {
+  const rv = S.rv;
+  $('reviewEmpty').hidden = !!rv; $('rv').hidden = !rv;
+  if (!rv) return;
+  const { g, a } = rv, moves = a.moves, n = moves.length;
+  const m = rv.cur > 0 ? moves[rv.cur - 1] : null;
+  const showBefore = rv.showBest && m;
+  const fen = showBefore ? m.fenBefore : a.fens[rv.cur];
+  const lastMv = !showBefore && m ? [m.from, m.to] : null;
+  $('board').innerHTML = boardHTML(fen, { flip: rv.flip, last: lastMv, lastCls: m ? 'c-' + m.cls : '' });
+  $('arrow').innerHTML = showBefore && m.bestUci ? arrowSVG(m.bestUci.slice(0, 2), m.bestUci.slice(2, 4), rv.flip) : '';
+  /* eval bar */
+  const ev = showBefore ? m.evBefore : (rv.cur === 0 ? a.moves[0].evBefore : moves[rv.cur - 1].evAfter);
+  const wp = winPct(ev);
+  const fill = $('evalfill');
+  fill.style.height = wp + '%'; fill.style.top = rv.flip ? '0' : 'auto'; fill.style.bottom = rv.flip ? 'auto' : '0';
+  const lbl = fmtEval(ev);
+  $('evaltop').textContent = rv.flip ? lbl : ''; $('evalbot').textContent = rv.flip ? '' : lbl;
+  $('evaltop').style.color = wp > 50 && rv.flip ? '#14202B' : '#fff'; $('evalbot').style.color = wp > 50 && !rv.flip ? '#14202B' : '#fff';
+  $('evalbar').setAttribute('aria-label', 'Evaluation ' + lbl);
+  $('rvTitle').textContent = 'You (' + (g.isWhite ? 'White' : 'Black') + ') vs ' + g.opp.name + ' (' + g.opp.rating + ')';
+  $('rvSub').textContent = g.opening + ' · ' + fmtDate(g.endTime) + ' · ' + g.timeClass + ' · accuracy ' + (a.accuracy != null ? a.accuracy.toFixed(0) + '%' : 'n/a');
+  renderGraph(); renderMoveList(); renderDetail(m, showBefore);
+  $('bFirst').disabled = $('bPrev').disabled = rv.cur === 0; $('bNext').disabled = $('bLast').disabled = rv.cur === n;
+}
+function renderGraph() {
+  const { a, cur } = S.rv, moves = a.moves, n = moves.length, W = 600, H = 120;
+  const X = i => (i / n) * W, Y = cp => H - winPct(cp) * H / 100;
+  const evs = [moves[0].evBefore].concat(moves.map(m => m.evAfter));
+  const pts = evs.map((e, i) => X(i).toFixed(1) + ',' + Y(e).toFixed(1)).join(' ');
+  let h = '<rect x="0" y="0" width="600" height="120" fill="var(--soft)"/><line x1="0" y1="60" x2="600" y2="60" stroke="var(--line)" stroke-width="1"/>' +
+    '<polygon points="0,120 ' + pts + ' 600,120" fill="var(--accent)" opacity=".18"/><polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+  moves.forEach(m => {
+    if (m.isUser && (m.cls === 'mistake' || m.cls === 'blunder')) {
+      h += '<circle cx="' + X(m.ply + 1).toFixed(1) + '" cy="' + Y(m.evAfter).toFixed(1) + '" r="5" fill="' + (m.cls === 'blunder' ? 'var(--blunder)' : 'var(--mistake)') + '" stroke="var(--card)" stroke-width="1.5"/>';
+    }
+  });
+  h += '<line x1="' + X(cur) + '" y1="0" x2="' + X(cur) + '" y2="120" stroke="var(--ink)" stroke-width="1.5" opacity=".7"/>';
+  $('graph').innerHTML = h;
+}
+function renderMoveList() {
+  const { a, cur } = S.rv; let h = '';
+  a.moves.forEach((m, i) => {
+    if (m.color === 'w') h += '<div class="n">' + m.fullmove + '.</div>';
+    else if (i === 0) h += '<div class="n">1.</div><div></div>';
+    const mark = MARKS[m.cls];
+    h += '<button type="button" data-ply="' + (i + 1) + '" class="' + (m.isUser ? 'user ' : '') + (cur === i + 1 ? 'cur' : '') + '"' + ' aria-label="' + esc(m.san) + (mark ? ' ' + m.cls : '') + '">' + esc(m.san) + (mark ? '<span class="mk ' + m.cls + '">' + mark + '</span>' : '') + '</button>';
+  });
+  const el = $('movelist'); el.innerHTML = h;
+  const c = el.querySelector('.cur'); if (c) { const top = c.offsetTop - el.clientHeight / 2; el.scrollTop = Math.max(0, top); }
+}
+const CLS_WORD = { best: 'Best move', good: 'Good move', inaccuracy: 'Inaccuracy', mistake: 'Mistake', blunder: 'Blunder' };
+function lessonHTML(L, cls) {
+  return '<div class="lesson ' + cls + '"><h3>' + esc(L.title) + '</h3>' +
+    '<p><span class="k">What happened.</span> ' + esc(L.what) + '</p>' +
+    '<p><span class="k">Why it was weaker.</span> ' + esc(L.why) + '</p>' +
+    '<p><span class="k">Look for next time.</span> ' + esc(L.next) + '</p></div>';
+}
+function renderDetail(m, showBefore) {
+  const el = $('detail');
+  if (!m) { el.innerHTML = '<p class="muted">Start of the game. Use the arrow keys or the buttons to step through the moves.</p>'; return; }
+  const who = m.isUser ? 'Your move' : 'Opponent’s move';
+  let h = '<h3><span class="dot c-' + m.cls + '"></span>' + m.fullmove + (m.color === 'w' ? '. ' : '... ') + esc(m.san) + ' <span class="muted" style="font-weight:500">' + who + ', ' + CLS_WORD[m.cls].toLowerCase() + '</span></h3>';
+  h += '<p class="small muted">Evaluation ' + fmtEval(m.evBefore) + ' to ' + fmtEval(m.evAfter) + ' (White’s view). ' + (m.isUser ? 'Your' : 'Their') + ' win chance ' + Math.round(winPct(m.moverBefore)) + '% to ' + Math.round(winPct(m.moverAfter)) + '%.' + '</p>';
+  if (m.bestUci && m.bestUci !== m.uci) {
+    h += '<p><span class="k">Engine’s best move:</span> <b>' + esc(m.bestSan) + '</b>' + (m.bestLineSan ? ' <span class="line">' + esc(m.bestLineSan) + '</span>' : '') + '</p>';
+  } else if (m.isUser) h += '<p class="small muted">That was the engine’s top choice or close to it.</p>';
+  if (m.lesson) h += lessonHTML(m.lesson, m.cls);
+  else if (!m.isUser && (m.cls === 'mistake' || m.cls === 'blunder')) h += '<p class="small muted">Your opponent slipped here. Did you see it?</p>';
+  else if (m.isUser && (m.cls === 'inaccuracy')) h += '<p class="small muted">A small slip. Lessons appear for mistakes and blunders.</p>';
+  if (showBefore) h += '<p class="small muted">Showing the position before ' + esc(m.san) + ', with the engine’s move as a green arrow.</p>';
+  el.innerHTML = h;
+}
+
+/* ---------- Patterns ---------- */
+function entriesAnalyzed(list) { return (list || S.games).filter(g => S.analyses[g.url]).map(g => ({ game: g, analysis: S.analyses[g.url] })); }
+function renderPatterns() {
+  const el = $('patterns');
+  if (!S.games.length) { el.innerHTML = '<p class="empty">Load some games first.</p>'; return; }
+  const list = filteredGames(), entries = entriesAnalyzed(list);
+  const ops = openingTable(list, S.analyses);
+  let h = '<p class="muted small">Showing ' + list.length + ' games' + (S.filter !== 'all' ? ' (' + S.filter + ')' : '') + ', ' + entries.length + ' analyzed.</p>';
+  if (entries.length) {
+    const ag = aggregate(entries), f1 = x => x == null ? 'n/a' : x.toFixed(1) + '%';
+    h += '<h2 class="sec">Accuracy</h2><div class="grid3"><div class="stat"><div class="v">' + f1(ag.acc) + '</div><div class="l">Overall</div></div><div class="stat"><div class="v">' + f1(ag.accWhite) + '</div><div class="l">As White</div></div><div class="stat"><div class="v">' + f1(ag.accBlack) + '</div><div class="l">As Black</div></div>' +
+      '<div class="stat"><div class="v">' + ag.blundersPerGame.toFixed(1) + '</div><div class="l">Blunders per game</div></div><div class="stat"><div class="v">' + ag.mistakesPerGame.toFixed(1) + '</div><div class="l">Mistakes per game</div></div></div>';
+    const W = weaknesses(ag, ops);
+    h += '<h2 class="sec">Your 3 biggest weaknesses</h2>';
+    if (!W.weak.length) h += '<p class="muted">Analyze a few more games to see clear patterns.</p>';
+    W.weak.forEach((w, i) => { h += '<div class="panel weak"><h3>' + (i + 1) + '. ' + esc(w.title) + '</h3><p>' + esc(w.numbers) + '</p><p><span class="k" style="font-weight:700">Train this.</span> ' + esc(w.advice) + '</p></div>'; });
+    if (W.strength) h += '<h2 class="sec">A strength</h2><div class="panel strong"><h3>' + esc(W.strength.title) + '</h3><p>' + esc(W.strength.numbers) + '</p></div>';
+    h += '<h2 class="sec">Mistakes and blunders per 100 moves, by phase</h2><div class="panel"><div class="bars">';
+    const maxRate = Math.max.apply(null, PHASES.map(p => ag.phase[p].rate || 0).concat([1]));
+    PHASES.forEach(p => { const r = ag.phase[p].rate; h += '<div class="bar-row"><span>' + p[0].toUpperCase() + p.slice(1) + ' <span class="muted">(' + ag.phase[p].moves + ' moves)</span></span><span class="b"><i style="width:' + (r == null ? 0 : r / maxRate * 100) + '%"></i></span><b>' + (r == null ? 'n/a' : r.toFixed(1)) + '</b></div>'; });
+    h += '</div></div>';
+    h += '<h2 class="sec">What kind of mistakes</h2><div class="panel">';
+    const cats = Object.keys(ag.cats).sort((a, b) => ag.cats[b] - ag.cats[a]);
+    h += cats.length ? '<table class="t"><tbody>' + cats.map(c => '<tr><td>' + esc(CAT_LABEL[c]) + '</td><td class="n"><b>' + ag.cats[c] + '</b></td></tr>').join('') + '</tbody></table>' : '<p class="muted">No mistakes or blunders found. Impressive.</p>';
+    h += '</div><h2 class="sec">Your 5 costliest moves</h2><div class="panel">';
+    h += ag.costliest.length ? '<table class="t"><tbody>' + ag.costliest.map(c => '<tr><td><button class="btn small" data-open="' + esc(c.game.url) + '" data-ply="' + c.move.ply + '">Open</button></td><td>' + c.move.fullmove + (c.move.color === 'w' ? '. ' : '... ') + esc(c.move.san) + ' <span class="muted">vs ' + esc(c.game.opp.name) + '</span></td><td class="n">-' + c.move.loss.toFixed(0) + '% win chance</td></tr>').join('') + '</tbody></table>' : '<p class="muted">Nothing to list.</p>';
+    h += '</div>';
+  } else h += '<p class="note">Analyze some games to see accuracy, mistake types and weaknesses. The opening table below works without analysis.</p>';
+  h += '<h2 class="sec">Openings</h2><div class="panel"><table class="t"><thead><tr><th>Opening</th><th class="n">Games</th><th class="n">W-D-L</th><th class="n">Accuracy</th></tr></thead><tbody>' +
+    ops.map(o => '<tr><td>' + esc(o.name) + '</td><td class="n">' + o.n + '</td><td class="n">' + o.w + '-' + o.d + '-' + o.l + '</td><td class="n">' + (o.acc == null ? '-' : o.acc.toFixed(1) + '%') + '</td></tr>').join('') + '</tbody></table></div>';
+  el.innerHTML = h;
+}
+
+/* ---------- Train ---------- */
+function retryList() { const r = store.get('pm1:retry'); return Array.isArray(r) ? r : []; }
+function saveRetry(list) { store.set('pm1:retry', list.slice(0, 200)); }
+function renderTrainIfVisible() { if (S.tab === 'train') renderTrain(true); }
+function trainQueue() {
+  if (S.train.mode === 'retry') return retryList();
+  return buildPuzzles(entriesAnalyzed());
+}
+function renderTrain(reset) {
+  const T = S.train, el = $('train');
+  if (reset || !T.queue.length) { T.queue = trainQueue(); if (reset) { T.i = 0; T.sel = null; T.state = 'asking'; T.lastMsg = ''; } }
+  const retryN = retryList().length;
+  let h = '<div class="trainhead"><span class="chip">Solved <b>' + T.solved + '</b></span><span class="chip">Missed <b>' + T.missed + '</b></span>' +
+    '<button class="btn small' + (T.mode === 'all' ? ' primary' : '') + '" data-mode="all">All my mistakes</button>' +
+    '<button class="btn small' + (T.mode === 'retry' ? ' primary' : '') + '" data-mode="retry"' + (retryN ? '' : ' disabled') + '>Retry missed (' + retryN + ')</button></div>';
+  if (!T.queue.length) {
+    h += '<p class="empty">' + (T.mode === 'retry' ? 'No missed puzzles waiting. Nice.' : 'Analyze some games first. Puzzles are built from your own mistakes and blunders.') + '</p>';
+    el.innerHTML = h; return;
+  }
+  if (T.i >= T.queue.length) {
+    h += '<div class="panel"><h2>Session finished</h2><p>You solved ' + T.solved + ' and missed ' + T.missed + '. ' + (retryN ? 'Missed puzzles are saved under Retry missed.' : '') + '</p><button class="btn primary" data-act="restart">Start again</button></div>';
+    el.innerHTML = h; return;
+  }
+  const p = T.queue[T.i]; T.puz = p;
+  const side = p.side === 'w' ? 'White' : 'Black';
+  const flip = p.side === 'b';
+  let targets = null;
+  if (T.sel && T.state === 'asking') { targets = {}; new Chess(p.fen).moves({ square: T.sel, verbose: true }).forEach(m => { targets[m.to] = 1; }); }
+  const showFen = p.fen;
+  const arrow = (T.state === 'missed' || T.state === 'solved') ? arrowSVG(p.bestUci.slice(0, 2), p.bestUci.slice(2, 4), flip) : '';
+  h += '<div class="rv"><div><div class="boardrow"><div class="boardwrap"><div class="board" id="tboard">' + boardHTML(showFen, { flip, sel: T.sel, targets }) + '</div><svg class="arrow" viewBox="0 0 8 8" aria-hidden="true">' + arrow + '</svg></div></div></div>' +
+    '<div><div class="panel"><h2>Puzzle ' + (T.i + 1) + ' of ' + T.queue.length + '</h2><p><b>' + side + ' to move.</b> In your game you played <b>' + esc(p.playedSan) + '</b>, which cost about ' + Math.round(p.loss) + '% win chance. Find a better move.</p>' +
+    '<p class="muted small">Tap a piece, then tap the square to move it.</p>';
+  if (T.state === 'checking') h += '<p class="muted">Checking your move with Stockfish...</p>';
+  if (T.state === 'solved') h += '<p class="verdict ok">' + esc(T.lastMsg) + '</p>';
+  if (T.state === 'missed') h += '<p class="verdict no">' + esc(T.lastMsg) + '</p>';
+  if (T.state === 'solved' || T.state === 'missed') {
+    h += '<p><span class="k" style="font-weight:700">Engine’s best:</span> <b>' + esc(p.bestSan) + '</b> <span class="line">' + esc(p.bestLine) + '</span></p>';
+    if (p.lesson) h += lessonHTML(p.lesson, p.cls);
+    h += '<div class="ctrl"><button class="btn primary" data-act="next">Next puzzle</button></div>';
+  } else h += '<div class="ctrl"><button class="btn small" data-act="skip">Skip</button></div>';
+  h += '</div></div></div>';
+  el.innerHTML = h;
+}
+async function trainAttempt(from, to) {
+  const T = S.train, p = T.puz; if (!p || T.state !== 'asking') return;
+  const c = new Chess(p.fen);
+  const piece = c.get(from);
+  const promo = piece && piece.type === 'p' && (to[1] === '8' || to[1] === '1') ? 'q' : undefined;
+  const mv = c.move({ from, to, promotion: promo });
+  if (!mv) { T.sel = null; renderTrain(); return; }
+  const uci = from + to + (promo || '');
+  T.sel = null;
+  let ok = uci === p.bestUci, how = ok ? 'Correct, that is the engine’s top move.' : '';
+  if (!ok) {
+    T.state = 'checking'; renderTrain();
+    let evAfter = null;
+    try {
+      const t = terminalEval(c.fen());
+      if (t !== null) evAfter = p.side === 'w' ? t : -t;
+      else { const r = await engine.evalFen(c.fen(), S.depth); evAfter = p.side === 'w' ? r.cp : -r.cp; }
+    } catch (e) { evAfter = null; }
+    if (puzzleAccepts(p, uci, evAfter)) { ok = true; how = 'Correct. ' + mv.san + ' is not the engine’s first choice but keeps your win chance within 3% of it.'; }
+    else if (evAfter == null) how = 'Not the best move. (Stockfish was not available to check other moves.) The best was ' + p.bestSan + '.';
+    else how = mv.san + ' keeps about ' + Math.round(winPct(evAfter)) + '% win chance, against ' + Math.round(winPct(p.moverBefore)) + '% for ' + p.bestSan + '. The best move was ' + p.bestSan + '.';
+  }
+  T.state = ok ? 'solved' : 'missed'; T.lastMsg = how;
+  const rl = retryList().filter(x => x.id !== p.id);
+  if (ok) T.solved++; else { T.missed++; rl.unshift(p); }
+  saveRetry(rl);
+  renderTrain();
+}
+function trainSquareClick(nm) {
+  const T = S.train, p = T.puz; if (!p || T.state !== 'asking') return;
+  const c = new Chess(p.fen), pc = c.get(nm);
+  if (T.sel && T.sel !== nm) {
+    const legal = c.moves({ square: T.sel, verbose: true }).some(m => m.to === nm);
+    if (legal) { trainAttempt(T.sel, nm); return; }
+  }
+  if (pc && pc.color === p.side) T.sel = T.sel === nm ? null : nm; else T.sel = null;
+  renderTrain();
+}
+
+/* ---------- wiring ---------- */
+function wire() {
+  $('setup').addEventListener('submit', loadGames);
+  $('stopBtn').addEventListener('click', () => { S.stop = true; if (engine.cancel) engine.cancel(); $('progTxt').textContent = 'Stopping...'; });
+  $('analyzeAll').addEventListener('click', () => analyzeList(filteredGames().filter(g => !S.analyses[g.url] && !g.bad)));
+  $('tcFilter').addEventListener('change', e => { S.filter = e.target.value; renderGames(); renderPatterns(); });
+  $('depth').addEventListener('change', e => { S.depth = +e.target.value; });
+  document.querySelector('nav.tabs').addEventListener('click', e => { const b = e.target.closest('button[data-tab]'); if (b) showTab(b.dataset.tab); });
+  $('gameList').addEventListener('click', e => {
+    const b = e.target.closest('button[data-act]'); if (!b) return;
+    if (b.dataset.act === 'review') openReview(b.dataset.url); else analyzeOne(b.dataset.url);
+  });
+  $('board').addEventListener('click', () => { /* review board is read-only */ });
+  $('bFirst').onclick = () => rvGo(0); $('bPrev').onclick = () => rvGo(S.rv.cur - 1);
+  $('bNext').onclick = () => rvGo(S.rv.cur + 1); $('bLast').onclick = () => rvGo(1e9);
+  $('bFlip').onclick = () => { S.rv.flip = !S.rv.flip; renderReview(); };
+  $('showBest').onchange = e => { S.rv.showBest = e.target.checked; renderReview(); };
+  $('movelist').addEventListener('click', e => { const b = e.target.closest('button[data-ply]'); if (b) rvGo(+b.dataset.ply); });
+  $('graph').addEventListener('click', e => {
+    const r = $('graph').getBoundingClientRect(), n = S.rv.a.moves.length;
+    rvGo(Math.round((e.clientX - r.left) / r.width * n));
+  });
+  document.addEventListener('keydown', e => {
+    if (S.tab !== 'review' || !S.rv || /INPUT|SELECT|TEXTAREA/.test((e.target.tagName || ''))) return;
+    if (e.key === 'ArrowLeft') { e.preventDefault(); rvGo(S.rv.cur - 1); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); rvGo(S.rv.cur + 1); }
+    else if (e.key === 'Home') { e.preventDefault(); rvGo(0); }
+    else if (e.key === 'End') { e.preventDefault(); rvGo(1e9); }
+  });
+  $('patterns').addEventListener('click', e => {
+    const b = e.target.closest('button[data-open]'); if (b) openReview(b.dataset.open, +b.dataset.ply);
+  });
+  $('train').addEventListener('click', e => {
+    const sq = e.target.closest('.sq'); if (sq && sq.closest('#tboard')) { trainSquareClick(sq.dataset.sq); return; }
+    const md = e.target.closest('button[data-mode]'); if (md) { S.train.mode = md.dataset.mode; S.train.queue = []; renderTrain(true); return; }
+    const ac = e.target.closest('button[data-act]'); if (!ac) return;
+    const T = S.train;
+    if (ac.dataset.act === 'next' || ac.dataset.act === 'skip') { T.i++; T.sel = null; T.state = 'asking'; renderTrain(); }
+    if (ac.dataset.act === 'restart') { T.solved = 0; T.missed = 0; renderTrain(true); }
+  });
+}
+function init() {
+  const now = new Date(); $('month').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+  const u = store.get('pm1:user'); if (u) { $('user').value = u; const sv = loadSaved(u); if (sv && sv.length) { S.user = u; S.games = sv; afterGamesLoaded(); showMsg('Showing games saved on this device. Press Load games to refresh.', 'info'); } }
+  wire(); showTab('games');
+  if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => { /* optional */ });
+  window.__pm = { S, engine };
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init); else init();
+</script>
+</body>
+</html>
