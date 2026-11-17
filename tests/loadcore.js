@@ -6,7 +6,7 @@ function load() {
   let src = fs.existsSync(idx) ? fs.readFileSync(idx, 'utf8') : '';
   let m = src.match(/\/\*CORE-START\*\/([\s\S]*?)\/\*CORE-END\*\//);
   if (!m) m = fs.readFileSync(path.join(__dirname, '..', 'src', 'core.js'), 'utf8').match(/\/\*CORE-START\*\/([\s\S]*?)\/\*CORE-END\*\//);
-  const names = 'winPct moveAccuracy classify phaseOf scoreToWhite parseInfoLine buildLesson analyzeGame parseOpening normalizeGame mergeGames replayPgn terminalEval pvToSan numberedLine aggregate openingTable weaknesses buildPuzzles puzzleAccepts recordOf describeIdea fenToBoard attackersOf seeGain sqIdx MARKS CAT_LABEL'.split(' ');
+  const names = 'buildBook decorateAnalysis commentFor openingReport buildStory quizItems lineFens describePlayed sacrificeInfo greatInfo LABEL_WORD LABEL_MARK LABEL_ORDER stripSan winPct moveAccuracy classify phaseOf scoreToWhite parseInfoLine buildLesson analyzeGame parseOpening normalizeGame mergeGames replayPgn terminalEval pvToSan numberedLine aggregate openingTable weaknesses buildPuzzles puzzleAccepts recordOf describeIdea fenToBoard attackersOf seeGain sqIdx MARKS CAT_LABEL'.split(' ');
   return new Function('Chess', m[1] + '\nreturn {' + names.join(',') + '};')(Chess);
 }
 module.exports = { load, Chess };
