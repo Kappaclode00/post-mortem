@@ -4,9 +4,9 @@
   "private": true,
   "description": "Free Chess.com game review and training PWA. Static files only. This package.json exists only for the tests.",
   "scripts": {
-    "test": "node tests/unit.test.js",
+    "test": "node tests/unit.test.js && node tests/v2.test.js",
     "serve": "python3 -m http.server 8123",
-    "e2e": "node tests/e2e-local.js"
+    "e2e": "node tests/e2e-local.js && node tests/e2e-v2.js"
   },
   "license": "MIT"
 }
