@@ -1,6 +1,6 @@
 /* Post-Mortem service worker: network first for same-origin GET, cache fallback, cross-origin ignored. */
-const CACHE = 'pm-v1';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './vendor/chess.js'];
+const CACHE = 'pm-v2';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg', './vendor/chess.js', './vendor/openings.json'];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u => c.add(u).catch(() => null)))).then(() => self.skipWaiting()));
 });
