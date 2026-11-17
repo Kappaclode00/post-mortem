@@ -18,9 +18,10 @@
   --accent:#1F6F78; --on-accent:#FFFFFF; --sq-l:#E3E9EE; --sq-d:#869DB1;
   --best:#2E8B57; --inacc:#C9A227; --mistake:#D9822B; --blunder:#C2403A;
   --focus:#1F6F78; --soft:#E4ECEF;
+  --brilliant:#14979E; --great:#4B7BD8; --book:#8A6C4A;
 }
 @media (prefers-color-scheme: dark){
-  :root{ --ink:#E7EEF3; --paper:#0E161D; --card:#16212B; --muted:#9FB0BD; --line:#2A3B4B; --accent:#58B8C3; --on-accent:#0E161D; --focus:#58B8C3; --soft:#1C2B37; }
+  :root{ --ink:#E7EEF3; --paper:#0E161D; --card:#16212B; --muted:#9FB0BD; --line:#2A3B4B; --accent:#58B8C3; --on-accent:#0E161D; --focus:#58B8C3; --soft:#1C2B37; --brilliant:#25B5BD; --great:#6E97E6; --book:#A58862; }
 }
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
@@ -112,12 +113,24 @@ li.game .side{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 .mv button:hover{background:var(--soft)}
 .mv button.user{font-weight:700}
 .mv button.cur{background:var(--soft);box-shadow:inset 0 0 0 2px var(--accent)}
-.mk{margin-left:2px;font-weight:700}
-.mk.inaccuracy{color:#8F7410}.mk.mistake{color:#B3661A}.mk.blunder{color:var(--blunder)}
-@media(prefers-color-scheme:dark){.mk.inaccuracy{color:var(--inacc)}.mk.mistake{color:var(--mistake)}}
+.mk{margin-left:4px;font-weight:700;font-size:.85em}
+.mk.inaccuracy{color:#8F7410}.mk.mistake,.mk.miss{color:#B3661A}.mk.blunder{color:var(--blunder)}.mk.brilliant{color:var(--brilliant)}.mk.great{color:var(--great)}.mk.book{color:var(--book)}
+@media(prefers-color-scheme:dark){.mk.inaccuracy{color:var(--inacc)}.mk.mistake,.mk.miss{color:var(--mistake)}.mk.brilliant{color:#3CC4CC}.mk.great{color:#8FB0F0}.mk.book{color:#C4A17C}}
 .dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
-.c-best,.c-good{--hlc:var(--best)}.c-inaccuracy{--hlc:var(--inacc)}.c-mistake{--hlc:var(--mistake)}.c-blunder{--hlc:var(--blunder)}
-.dot.c-best,.dot.c-good{background:var(--best)}.dot.c-inaccuracy{background:var(--inacc)}.dot.c-mistake{background:var(--mistake)}.dot.c-blunder{background:var(--blunder)}
+.c-best,.c-good,.c-excellent{--hlc:var(--best)}.c-inaccuracy{--hlc:var(--inacc)}.c-mistake,.c-miss{--hlc:var(--mistake)}.c-blunder{--hlc:var(--blunder)}.c-brilliant{--hlc:var(--brilliant)}.c-great{--hlc:var(--great)}.c-book{--hlc:var(--book)}
+.bdg{position:absolute;top:3%;right:3%;z-index:2;min-width:4.8cqw;height:4.8cqw;padding:0 .7cqw;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:2.7cqw;font-weight:800;line-height:1;color:#fff;box-shadow:0 0 0 .3cqw rgba(255,255,255,.9);pointer-events:none}
+.bdg.inl{position:static;display:inline-flex;min-width:1.5em;height:1.5em;padding:0 .35em;margin-right:6px;font-size:.72rem;vertical-align:middle;box-shadow:none}
+.l-brilliant{background:var(--brilliant)}.l-great{background:var(--great)}.l-best{background:var(--best)}.l-excellent{background:#5BAE7B}.l-good{background:#7E9A88}.l-book{background:var(--book)}.l-inaccuracy{background:#B8921A}.l-mistake,.l-miss{background:#C26F1E}.l-blunder{background:var(--blunder)}
+.sq.thr{box-shadow:inset 0 0 0 .7cqw var(--blunder)}
+.sq.hint{box-shadow:inset 0 0 0 .7cqw var(--great)}
+.coach{background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
+.steps{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 4px}
+.stp{border:1px solid var(--line);background:var(--card);border-radius:8px;min-height:36px;padding:0 10px;font-variant-numeric:tabular-nums}
+.stp.cur{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+#story summary{cursor:pointer;list-style:none;min-height:36px;display:flex;align-items:center}
+#story summary::-webkit-details-marker{display:none}
+#story summary h2::before{content:"\25B8 ";color:var(--muted)}
+#story details[open] summary h2::before{content:"\25BE "}
 .lesson{border-left:5px solid var(--mistake);background:var(--soft);border-radius:8px;padding:10px 12px;margin-top:10px}
 .lesson.blunder{border-left-color:var(--blunder)}
 .lesson h3{margin-bottom:4px}
@@ -204,6 +217,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
         <button class="btn" id="bNext" aria-label="Next move">&#x25B6;</button>
         <button class="btn" id="bLast" aria-label="Last position">&#x23ED;</button>
         <button class="btn" id="bFlip">Flip</button>
+        <button class="btn" id="quizBtn" type="button">Quiz me</button>
         <label class="switch"><input type="checkbox" id="showBest"> Show best move</label>
       </div>
     </div>
@@ -211,6 +225,7 @@ table.t td.n,table.t th.n{text-align:right;font-variant-numeric:tabular-nums}
       <div class="panel"><h2 id="rvTitle"></h2><p class="muted small" id="rvSub"></p></div>
       <div class="panel"><svg class="graph" id="graph" viewBox="0 0 600 120" role="img" aria-label="Evaluation graph. Click to jump to a move."></svg></div>
       <div class="panel" id="detail"></div>
+      <div class="panel" id="story"></div>
       <div class="panel"><div class="mv" id="movelist"></div></div>
     </div>
   </div>
@@ -718,6 +733,7 @@ function analyzeGame(pgn, userIsWhite, raw) {
       loss, cls, acc: moveAccuracy(loss), phase: phaseOf(fullmove),
       bestUci: raw.best[p] || null, bestPv: raw.pv[p] || [], lesson: null
     };
+    rec.moveObj = m;
     rec.bestSan = rec.bestUci ? (pvToSan(fens[p], [rec.bestUci], 1)[0] || rec.bestUci) : null;
     rec.bestLineSan = rec.bestPv.length ? numberedLine(fens[p], rec.bestPv, 5) : '';
     if (isUser && loss >= 10) {
@@ -862,6 +878,323 @@ function puzzleAccepts(puz, uci, moverEvAfter) {
   if (moverEvAfter == null) return false;
   return winPct(puz.moverBefore) - winPct(moverEvAfter) <= 3;
 }
+/* ---------- v2: opening book, move labels, per-move commentary, game story ---------- */
+const LABEL_WORD = {
+  brilliant: 'Brilliant', great: 'Great move', best: 'Best move', excellent: 'Excellent', good: 'Good move', book: 'Book move',
+  inaccuracy: 'Inaccuracy', mistake: 'Mistake', miss: 'Miss', blunder: 'Blunder'
+};
+const LABEL_MARK = { brilliant: '!!', great: '!', best: '★', excellent: '✓', good: '·', book: 'B', inaccuracy: '?!', mistake: '?', miss: '×', blunder: '??' };
+const LABEL_ORDER = ['brilliant', 'great', 'best', 'excellent', 'good', 'book', 'inaccuracy', 'mistake', 'miss', 'blunder'];
+const stripSan = s => String(s).replace(/[+#!?]+$/, '');
+
+/* rows: [eco, name, 'e4 e5 Nf3 ...']. Returns { 'e4 e5': { next: {Nf3: n}, name, eco }, ... } keyed by every prefix. */
+function buildBook(rows) {
+  const nodes = Object.create(null);
+  const get = k => nodes[k] || (nodes[k] = { next: {} });
+  rows.forEach(r => {
+    const mv = r[2].split(' ').map(stripSan); let key = '';
+    for (let i = 0; i < mv.length; i++) {
+      const parent = get(key);
+      parent.next[mv[i]] = (parent.next[mv[i]] || 0) + 1;
+      key = key ? key + ' ' + mv[i] : mv[i];
+    }
+    const n = get(key); n.name = r[1]; n.eco = r[0];
+  });
+  return nodes;
+}
+
+/* squares and pieces of one line, one entry per ply: { san, uci, from, to, fen } */
+function lineFens(fen, pv, maxPlies) {
+  const c = new Chess(fen), out = [];
+  for (let i = 0; i < Math.min((pv || []).length, maxPlies || 8); i++) {
+    const m = uciMove(c, pv[i]); if (!m) break;
+    out.push({ san: m.san, uci: pv[i], from: m.from, to: m.to, fen: c.fen(), color: m.color });
+  }
+  return out;
+}
+
+/* a short verb phrase for what a move does, for example "develops the knight and attacks the pawn on e5" */
+function describePlayed(fenBefore, uci) {
+  const c = new Chess(fenBefore), bb = fenToBoard(fenBefore);
+  const m = uciMove(c, uci); if (!m) return 'is the move played';
+  if (c.in_checkmate()) return 'delivers checkmate';
+  const ba = fenToBoard(c.fen()), me = m.color, opp = other(me), from = sqIdx(m.from), to = sqIdx(m.to), name = PNAME[m.piece];
+  const ph = [];
+  const full = +fenBefore.split(' ')[5] || 1;
+  if (m.flags.indexOf('k') >= 0 || m.flags.indexOf('q') >= 0) ph.push('castles, tucking the king away and bringing a rook toward the centre');
+  if (m.promotion) ph.push('promotes the pawn to ' + article(PNAME[m.promotion]) + ' ' + PNAME[m.promotion]);
+  if (m.captured) {
+    const cap = PNAME[m.captured], defended = attackersOf(bb, to, opp).length > 0;
+    if (m.flags.indexOf('e') >= 0) ph.push('captures the pawn en passant');
+    else if (!defended) ph.push('wins ' + article(cap) + ' ' + cap + ' on ' + m.to + ' that nothing protected');
+    else if (PV[m.captured] > PV[m.piece]) ph.push('wins ' + article(cap) + ' ' + cap + ' for ' + article(name) + ' ' + name);
+    else if (PV[m.captured] === PV[m.piece]) ph.push('trades off the ' + cap + ' on ' + m.to);
+    else ph.push('takes the ' + cap + ' on ' + m.to);
+  }
+  const fk = forkTargets(ba, to).filter(t => ba[t].c === opp);
+  if (fk.length >= 2 && m.piece !== 'p') ph.push('forks the ' + fk.slice(0, 2).map(t => PNAME[ba[t].t] + ' on ' + sqName(t)).join(' and the '));
+  else {
+    const lt = lineTactic(ba, to);
+    if (lt && lt.kind === 'pin') ph.push('pins the ' + PNAME[ba[lt.front].t] + ' on ' + sqName(lt.front) + ' to the ' + PNAME[ba[lt.back].t]);
+    else if (lt && lt.kind === 'skewer') ph.push('skewers the ' + PNAME[ba[lt.front].t] + ' on ' + sqName(lt.front) + ' with the ' + PNAME[ba[lt.back].t] + ' behind it');
+  }
+  if (c.in_check() && !ph.some(x => /fork|pin|skewer/.test(x))) ph.push('gives check');
+  if (!ph.length) {
+    const home = me === 'w' ? '1' : '8';
+    if ((m.piece === 'n' || m.piece === 'b') && m.from[1] === home && full <= 14) ph.push('develops the ' + name + ' toward the centre');
+    else if (m.piece !== 'p' && !m.captured && seeGain(bb, from, opp) > 0 && seeGain(ba, to, opp) === 0) ph.push('moves the ' + name + ' out of danger');
+  }
+  if (!ph.length) {
+    let saved = null;
+    for (let i = 0; i < 64; i++) {
+      const p = bb[i]; if (!p || p.c !== me || p.t === 'k' || p.t === 'p' || i === from) continue;
+      if (seeGain(bb, i, opp) >= 1 && seeGain(ba, i, opp) === 0) { saved = i; break; }
+    }
+    if (saved != null) ph.push('defends the ' + PNAME[bb[saved].t] + ' on ' + sqName(saved));
+  }
+  if (!ph.length) {
+    const tg = forkTargets(ba, to).filter(t => ba[t].c === opp && ba[t].t !== 'k');
+    if (tg.length && m.piece !== 'p') ph.push('attacks the ' + PNAME[ba[tg[0]].t] + ' on ' + sqName(tg[0]));
+  }
+  if (!ph.length && m.piece === 'p') {
+    if (isPassed(ba, to) && (me === 'w' ? +m.to[1] >= 5 : +m.to[1] <= 4)) ph.push('pushes the passed pawn');
+    else if ('de'.indexOf(m.to[0]) >= 0 && /[3-5]/.test(m.to[1])) ph.push('claims space in the centre');
+    else ph.push('advances the pawn to ' + m.to);
+  }
+  if (!ph.length && m.piece === 'r') {
+    const f = to % 8; let own = false, any = false;
+    for (let r = 0; r < 8; r++) { const q = ba[r * 8 + f]; if (q && q.t === 'p') { any = true; if (q.c === me) own = true; } }
+    if (!any) ph.push('places the rook on the open ' + m.to[0] + '-file');
+    else if (!own) ph.push('places the rook on the half-open ' + m.to[0] + '-file');
+  }
+  if (!ph.length && m.piece === 'k' && nonPawnMaterial(ba) <= 14) ph.push('brings the king toward the action');
+  if (!ph.length) {
+    const centre = ['d4', 'e4', 'd5', 'e5'].filter(s => attackSquares(ba, to).indexOf(sqIdx(s)) >= 0);
+    if (m.piece !== 'p' && centre.length) ph.push('puts the ' + name + ' on ' + m.to + ', eyeing ' + centre.slice(0, 2).join(' and '));
+    else ph.push('improves the ' + name + ' by placing it on ' + m.to);
+  }
+  return ph.slice(0, 2).join(' and ');
+}
+
+/* a sound sacrifice: best move, material down for good, still fine */
+function sacrificeInfo(rec) {
+  if (!rec.bestPv || rec.bestPv.length < 5 || rec.bestPv[0] !== rec.uci) return null;
+  if (winPct(rec.moverAfter) < 50 || winPct(rec.moverBefore) > 92) return null;
+  const mat = materialAlong(rec.fenBefore, rec.bestPv, rec.color, 6);
+  if (mat.length < 6) return null;
+  const down = mat[0] - Math.min(mat[2], mat[3]), end = mat[0] - mat[mat.length - 1];
+  /* the reply must take a piece worth 3 or more, and the line must still be down 2 or more at its end */
+  return mat[1] - mat[2] >= 3 && down >= 2 && end >= 2 ? { down } : null;
+}
+/* an only-move style find: a tactic that wins material, or saving a piece that was about to be lost */
+function greatInfo(rec) {
+  if (!rec.bestPv || rec.bestPv[0] !== rec.uci || winPct(rec.moverBefore) > 85) return null;
+  const c = new Chess(rec.fenBefore), mv = uciMove(c, rec.uci); if (!mv) return null;
+  const bb = fenToBoard(rec.fenBefore), ba = fenToBoard(c.fen()), me = rec.color, opp = other(me), to = sqIdx(mv.to), from = sqIdx(mv.from);
+  const mat = materialAlong(rec.fenBefore, rec.bestPv, me, 4);
+  const gain = Math.max.apply(null, mat.slice(1)) - mat[0];
+  if (gain >= 3 && !mv.captured && mv.piece !== 'p') {
+    const fk = forkTargets(ba, to).filter(t => ba[t].c === opp);
+    if (fk.length >= 2) return { kind: 'fork', gain, text: 'it forks the ' + fk.slice(0, 2).map(t => PNAME[ba[t].t] + ' on ' + sqName(t)).join(' and the ') + ' and wins about ' + pts(gain) + ' of material' };
+    const lt = lineTactic(ba, to);
+    if (lt) return { kind: lt.kind, gain, text: 'it creates a ' + lt.kind + ' on the ' + PNAME[ba[lt.front].t] + ' that wins about ' + pts(gain) + ' of material' };
+  }
+  if (winPct(rec.moverBefore) <= 70) {
+    for (let i = 0; i < 64; i++) {
+      const p = bb[i]; if (!p || p.c !== me || p.t === 'k' || p.t === 'p') continue;
+      if (seeGain(bb, i, opp) >= 3) {
+        const j = i === from ? to : i;
+        if (seeGain(ba, j, opp) < 1) return { kind: 'rescue', gain: PV[p.t], text: 'your ' + PNAME[p.t] + ' on ' + sqName(i) + ' was about to be lost and this saves it' };
+      }
+    }
+  }
+  return null;
+}
+
+/* adds label, coaching data and the opening report to an analysis. Safe to call twice. */
+function decorateAnalysis(a, book) {
+  if (a.decorated && a.decoratedBook === !!book) return a;
+  const M = a.moves;
+  let bkKey = '', bookOn = !!book, lastName = null;
+  M.forEach(rec => {
+    rec.inBook = false; rec.bookName = null; rec.bookEco = null; rec.bookNew = false; rec.bookParentKey = bkKey; rec.comment = null;
+    bkKey = bkKey ? bkKey + ' ' + stripSan(rec.san) : stripSan(rec.san);
+    const bn = bookOn ? book[bkKey] : null;
+    bookOn = !!bn; rec.inBook = bookOn;
+    if (bn) { rec.bookNew = !!bn.name && bn.name !== lastName; if (bn.name) { lastName = bn.name; rec.bookName = bn.name; rec.bookEco = bn.eco; } else if (lastName) rec.bookName = lastName; }
+  });
+  M.forEach((rec, i) => {
+    const prev = i > 0 ? M[i - 1] : null, next = i + 1 < M.length ? M[i + 1] : null;
+    const isBest = rec.bestUci && rec.bestUci === rec.uci;
+    rec.refuteUci = next ? next.bestUci : null; rec.refutePv = next ? next.bestPv : [];
+    if (rec.isUser && rec.loss >= 5) {
+      if (rec.lesson) rec.coachLesson = rec.lesson;
+      else { try { rec.coachLesson = buildLesson({ fenBefore: rec.fenBefore, fenAfter: rec.fenAfter, color: rec.color, played: { san: rec.san, uci: rec.uci }, playedMove: rec.moveObj || {}, bestUci: rec.bestUci, bestPv: rec.bestPv, afterBest: rec.refuteUci, afterPv: rec.refutePv, moverBefore: rec.moverBefore, moverAfter: rec.moverAfter, fullmove: rec.fullmove, history: [] }); } catch (e) { rec.coachLesson = null; } }
+    }
+    let label;
+    if (rec.inBook) label = 'book';
+    else if (rec.loss >= 20) label = 'blunder';
+    else if (rec.loss >= 10) label = 'mistake';
+    else if (rec.loss >= 5) label = 'inaccuracy';
+    else if (isBest) label = 'best';
+    else if (rec.loss < 2) label = 'excellent';
+    else label = 'good';
+    if (label === 'inaccuracy' || label === 'mistake') {
+      const punish = prev && prev.color !== rec.color && prev.loss >= 10;
+      const lt = rec.coachLesson && /^missed_/.test(rec.coachLesson.type);
+      if (punish || lt) label = 'miss';
+    }
+    if (label === 'best') {
+      const sac = sacrificeInfo(rec);
+      if (sac) { label = 'brilliant'; rec.sac = sac; }
+      else { const g = greatInfo(rec); if (g) { label = 'great'; rec.great = g; } }
+    }
+    rec.label = label;
+  });
+  const counts = { u: {}, o: {} };
+  LABEL_ORDER.forEach(l => { counts.u[l] = 0; counts.o[l] = 0; });
+  M.forEach(r => { counts[r.isUser ? 'u' : 'o'][r.label]++; });
+  a.counts = counts;
+  a.opening = openingReport(a, book);
+  a.decorated = true; a.decoratedBook = !!book;
+  return a;
+}
+
+function sentence(s) { s = String(s).trim(); return /[.!?]$/.test(s) ? s : s + '.'; }
+function cap1(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
+
+/* the coach sentence(s) for one move, user or opponent */
+function commentFor(rec, a) {
+  if (rec.comment) return rec.comment;
+  const M = a.moves, next = rec.ply + 1 < M.length ? M[rec.ply + 1] : null;
+  const wb = Math.round(winPct(rec.moverBefore)), wa = Math.round(winPct(rec.moverAfter));
+  const who = rec.isUser ? 'You' : 'Your opponent';
+  let t = '';
+  const play = () => { try { return describePlayed(rec.fenBefore, rec.uci); } catch (e) { return 'is the move played'; } };
+  const safePlay = (fen, uci) => { try { return describePlayed(fen, uci); } catch (e) { return null; } };
+  switch (rec.label) {
+    case 'book':
+      t = 'Book move' + (rec.bookName && rec.bookNew ? ': ' + rec.bookName : '') + '. ' + (rec.isUser ? 'You are' : 'Your opponent is') + ' still following known opening theory.';
+      break;
+    case 'brilliant':
+      t = rec.san + ' ' + play() + '. It is a sacrifice: ' + (rec.isUser ? 'you give' : 'they give') + ' up about ' + pts(rec.sac ? rec.sac.down : 3) + ' of material, but the engine’s line keeps the position strong' + (rec.bestLineSan ? ' (' + rec.bestLineSan + ')' : '') + '.';
+      break;
+    case 'great':
+      t = 'A great find: ' + (rec.great ? rec.great.text : rec.san + ' ' + play()) + '.';
+      break;
+    case 'best':
+      t = rec.san + ' ' + play() + '. It is the engine’s top choice.';
+      break;
+    case 'excellent':
+      t = rec.san + ' ' + play() + '. ' + (rec.bestSan && rec.bestSan !== rec.san ? 'Practically as good as ' + rec.bestSan + '.' : '');
+      break;
+    case 'good':
+      t = rec.san + ' ' + play() + '. A solid move' + (rec.bestSan && rec.bestSan !== rec.san ? ', although ' + rec.bestSan + ' was slightly stronger' : '') + '.';
+      break;
+    default: {
+      const L = rec.coachLesson;
+      if (rec.isUser) {
+        if (L) t = L.what; else t = rec.san + ' ' + play() + ', but it gives away some of your advantage.';
+        if (rec.bestSan && t.indexOf(rec.bestSan) < 0) { const id = rec.bestUci ? safePlay(rec.fenBefore, rec.bestUci) : null; t += ' Better was ' + rec.bestSan + (id ? ', which ' + id : '') + '.'; }
+        if (rec.label === 'miss') t += ' You had a chance to punish your opponent here and let it go.';
+      } else {
+        t = rec.san + ' was ' + (rec.label === 'miss' ? 'a missed chance' : article(LABEL_WORD[rec.label].toLowerCase()) + ' ' + LABEL_WORD[rec.label].toLowerCase()) + ' by your opponent. ' + (rec.bestSan ? rec.bestSan + ' was stronger.' : '');
+        if (rec.loss >= 10 && next && next.bestUci && next.isUser) {
+          const id = safePlay(rec.fenAfter, next.bestUci);
+          t += ' You could answer with ' + next.bestSan + (id ? ', which ' + id : '') + '.';
+        }
+      }
+      if (rec.loss >= 5) t += ' Win chance ' + wb + '% to ' + wa + '%.';
+    }
+  }
+  rec.comment = t.replace(/\s+/g, ' ').trim();
+  return rec.comment;
+}
+
+/* where did the game leave opening theory? */
+function openingReport(a, book) {
+  const M = a.moves;
+  if (!book) return { available: false };
+  let last = null, lastName = null, lastEco = null;
+  M.forEach(r => { if (r.inBook) { last = r; if (r.bookName) { lastName = r.bookName; lastEco = r.bookEco; } } });
+  const leave = M.find(r => !r.inBook);
+  const rep = { available: true, name: lastName, eco: lastEco, bookPlies: M.filter(r => r.inBook).length, leftPly: leave ? leave.ply : null, by: null, san: null, loss: null, fen: null, bookNext: [], text: '' };
+  if (!leave) { rep.text = 'The whole game stayed inside known opening theory.'; return rep; }
+  rep.by = leave.isUser ? 'you' : 'opponent'; rep.san = leave.san; rep.loss = leave.loss; rep.fen = leave.fenBefore;
+  const node = book[leave.bookParentKey || ''];
+  if (node) {
+    rep.bookNext = Object.keys(node.next).map(s => {
+      const child = book[(leave.bookParentKey ? leave.bookParentKey + ' ' : '') + s];
+      return { san: s, name: child && child.name ? child.name : null, n: node.next[s] };
+    }).sort((x, y) => y.n - x.n).slice(0, 4);
+  }
+  const num = leave.fullmove + (leave.color === 'w' ? '. ' : '... ');
+  const book0 = rep.bookNext.length ? rep.bookNext.slice(0, 3).map(b => b.san + (b.name ? ' (' + b.name + ')' : '')).join(', ') : '';
+  const stayed = Math.ceil(rep.bookPlies / 2);
+  let t = (lastName ? 'Opening: ' + lastName + '. ' : '') + 'Theory ran for ' + stayed + ' move' + (stayed === 1 ? '' : 's') + '. ';
+  if (leave.isUser) {
+    t += 'You left the known lines with ' + num + leave.san + '.';
+    if (leave.loss >= 5) t += ' It cost about ' + Math.round(leave.loss) + '% win chance' + (book0 ? '; theory continued with ' + book0 : '') + '.';
+    else t += ' That is not a mistake, just a path off the beaten track' + (book0 ? ' (the book moves were ' + book0 + ')' : '') + '.';
+  } else {
+    t += 'Your opponent left the known lines with ' + num + leave.san + '.';
+    t += leave.loss >= 5 ? ' That was an inaccuracy of about ' + Math.round(leave.loss) + '% win chance, so look for how to punish it.' : ' It is a playable sideline' + (book0 ? ' (the book moves were ' + book0 + ')' : '') + '.';
+  }
+  rep.text = t;
+  return rep;
+}
+
+/* the story of one game, in plain language */
+function buildStory(a, game) {
+  const M = a.moves, mine = M.filter(r => r.isUser), theirs = M.filter(r => !r.isUser);
+  const userWp = r => winPct(r.isUser ? r.moverAfter : -r.moverAfter);
+  const meanAcc = arr => arr.length ? arr.reduce((s, x) => s + x.acc, 0) / arr.length : null;
+  const myAcc = meanAcc(mine), oppAcc = meanAcc(theirs);
+  const res = game.result, oppName = game.opp && game.opp.name ? game.opp.name : 'your opponent';
+  const peak = M.length ? M.reduce((b, r) => (userWp(r) > userWp(b) ? r : b), M[0]) : null;
+  const low = M.length ? M.reduce((b, r) => (userWp(r) < userWp(b) ? r : b), M[0]) : null;
+  const paras = [];
+  let head;
+  if (res === 'win') head = peak && userWp(low) < 30 && low.ply < peak.ply ? 'A comeback win' : (myAcc != null && myAcc >= 85 ? 'A clean win' : 'A win');
+  else if (res === 'draw') head = 'A draw';
+  else head = peak && userWp(peak) >= 70 ? 'A loss after a winning position' : 'A loss';
+  let s1 = 'You scored ' + (myAcc == null ? 'n/a' : myAcc.toFixed(0) + '%') + ' accuracy' + (oppAcc != null ? ' against ' + oppName + '’s ' + oppAcc.toFixed(0) + '%' : '') + '.';
+  const bl = a.counts ? a.counts.u : {};
+  const nb = (bl.blunder || 0), nm = (bl.mistake || 0) + (bl.miss || 0);
+  s1 += ' You made ' + nb + ' blunder' + (nb === 1 ? '' : 's') + ' and ' + nm + ' mistake' + (nm === 1 ? '' : 's') + (a.counts && a.counts.u.brilliant + a.counts.u.great ? ', and found ' + (a.counts.u.brilliant + a.counts.u.great) + ' brilliant or great move' + (a.counts.u.brilliant + a.counts.u.great === 1 ? '' : 's') : '') + '.';
+  paras.push(s1);
+  if (a.opening && a.opening.available) paras.push(a.opening.text);
+  /* turning point: biggest swing between consecutive moves, in your win chance */
+  let turn = null, best = 0;
+  M.forEach(r => { const d = Math.abs(winPct(r.moverAfter) - winPct(r.moverBefore)); if (d > best && r.loss >= 8) { best = d; turn = r; } });
+  let turnObj = null;
+  if (turn) {
+    const num = turn.fullmove + (turn.color === 'w' ? '. ' : '... ');
+    const youWere = turn.isUser;
+    const before = Math.round(winPct(turn.isUser ? turn.moverBefore : -turn.moverBefore)), after = Math.round(userWp(turn));
+    turnObj = { ply: turn.ply };
+    paras.push('The game turned at move ' + num + turn.san + ', ' + (youWere ? 'your' : 'your opponent’s') + ' ' + LABEL_WORD[turn.label].toLowerCase() + '. Your win chance went from ' + before + '% to ' + after + '%.' + (youWere && turn.coachLesson ? ' ' + turn.coachLesson.title + '.' : ''));
+  } else paras.push('There was no single big swing. The game was decided by small steps rather than one blunder.');
+  if (res !== 'win' && peak && userWp(peak) >= 70) paras.push('You reached ' + Math.round(userWp(peak)) + '% win chance at move ' + peak.fullmove + '. Review what changed after that point, since that is where the game was lost.');
+  if (res === 'win' && low && userWp(low) <= 30) paras.push('You were down to ' + Math.round(userWp(low)) + '% at move ' + low.fullmove + ' and still won. Resilience counts.');
+  /* weakest phase */
+  const ph = {};
+  mine.forEach(r => { const p = ph[r.phase] || (ph[r.phase] = { n: 0, bad: 0 }); p.n++; if (r.loss >= 10 && !r.inBook) p.bad++; });
+  const worst = Object.keys(ph).filter(k => ph[k].n >= 4 && ph[k].bad > 0).sort((x, y) => ph[y].bad / ph[y].n - ph[x].bad / ph[x].n)[0];
+  if (worst) paras.push('Your weakest phase here was the ' + worst + ': ' + ph[worst].bad + ' mistake' + (ph[worst].bad === 1 ? '' : 's') + ' in ' + ph[worst].n + ' moves.');
+  /* key moments */
+  const km = mine.filter(r => r.loss >= 10 && !r.inBook).sort((x, y) => y.loss - x.loss).slice(0, 3);
+  const good = mine.filter(r => r.label === 'brilliant' || r.label === 'great')[0];
+  const moments = km.map(r => ({ ply: r.ply, label: r.label, title: r.fullmove + (r.color === 'w' ? '. ' : '... ') + r.san, text: r.coachLesson ? r.coachLesson.title : LABEL_WORD[r.label] }));
+  if (good) moments.push({ ply: good.ply, label: good.label, title: good.fullmove + (good.color === 'w' ? '. ' : '... ') + good.san, text: LABEL_WORD[good.label] });
+  moments.sort((x, y) => x.ply - y.ply);
+  return { headline: head, paragraphs: paras, moments, turn: turnObj };
+}
+
+/* key moments for the quiz: your mistakes plus your brilliant and great finds, in game order */
+function quizItems(a) {
+  return a.moves.filter(r => r.isUser && r.bestUci && !r.inBook && (r.loss >= 10 || r.label === 'brilliant' || r.label === 'great' || r.label === 'miss')).map(r => r.ply);
+}
 /*CORE-END*/
 
 /* ================= app ================= */
@@ -877,7 +1210,7 @@ const GLYPH = { k: '♚', q: '♛', r: '♜', b: '♝', n: '♞', p: '♟' };
 const VS15 = '︎';
 const S = {
   user: '', games: [], analyses: {}, raws: {}, filter: 'all', depth: 10, busy: false, stop: false,
-  rv: null, train: { queue: [], i: 0, sel: null, state: 'idle', solved: 0, missed: 0, mode: 'all', busy: false, puz: null, lastMsg: '' },
+  book: null, bookErr: '', rv: null, train: { queue: [], i: 0, sel: null, state: 'idle', solved: 0, missed: 0, mode: 'all', busy: false, puz: null, lastMsg: '' },
   timings: [], offlineNote: ''
 };
 
@@ -1170,69 +1503,109 @@ function boardHTML(fen, o) {
     const f = flip ? 7 - col : col, r = flip ? row : 7 - row, i = r * 8 + f, nm = sqName(i), p = b[i];
     const dark = (f + r) % 2 === 0;
     const hl = o.last && (o.last[0] === nm || o.last[1] === nm);
-    let cls = 'sq' + (dark ? ' d' : '') + (hl ? ' hl ' + (o.lastCls || '') : '') + (o.sel === nm ? ' sel' : '') + (o.targets && o.targets[nm] ? ' tgt' + (p ? ' cap' : '') : '');
+    let cls = 'sq' + (dark ? ' d' : '') + (hl ? ' hl ' + (o.lastCls || '') : '') + (o.sel === nm ? ' sel' : '') + (o.targets && o.targets[nm] ? ' tgt' + (p ? ' cap' : '') : '') +
+      (o.thr && o.thr[nm] ? ' thr' : '') + (o.hint === nm ? ' hint' : '');
     h += '<button type="button" class="' + cls + '" data-sq="' + nm + '" aria-label="' + nm + (p ? ' ' + (p.c === 'w' ? 'white ' : 'black ') + PNAME[p.t] : '') + '">' +
       (p ? '<span class="pc ' + p.c + '">' + GLYPH[p.t] + VS15 + '</span>' : '') +
+      (o.badge && o.badge.sq === nm ? '<span class="bdg l-' + o.badge.label + '" aria-hidden="true">' + LABEL_MARK[o.badge.label] + '</span>' : '') +
       (row === 7 ? '<i class="co f">' + 'abcdefgh'[f] + '</i>' : '') + (col === 0 ? '<i class="co r">' + (r + 1) + '</i>' : '') + '</button>';
   }
   return h;
 }
-function arrowSVG(from, to, flip) {
+function arrowSVG(from, to, flip, color) {
   if (!from || !to) return '';
+  color = color || '#2E8B57';
   const pos = nm => { const f = 'abcdefgh'.indexOf(nm[0]), r = +nm[1] - 1; return [(flip ? 7 - f : f) + .5, (flip ? r : 7 - r) + .5]; };
   const a = pos(from), b = pos(to);
   const dx = b[0] - a[0], dy = b[1] - a[1], len = Math.hypot(dx, dy) || 1, ux = dx / len, uy = dy / len;
   const head = .42, wid = .3, sx = a[0] + ux * .25, sy = a[1] + uy * .25, ex = b[0] - ux * head, ey = b[1] - uy * head;
   const px = -uy, py = ux;
-  return '<line x1="' + sx + '" y1="' + sy + '" x2="' + ex + '" y2="' + ey + '" stroke="#2E8B57" stroke-width=".2" stroke-linecap="round" opacity=".9"/>' +
-    '<polygon fill="#2E8B57" opacity=".9" points="' + b[0] + ',' + b[1] + ' ' + (ex + px * wid) + ',' + (ey + py * wid) + ' ' + (ex - px * wid) + ',' + (ey - py * wid) + '"/>';
+  return '<line x1="' + sx + '" y1="' + sy + '" x2="' + ex + '" y2="' + ey + '" stroke="' + color + '" stroke-width=".2" stroke-linecap="round" opacity=".9"/>' +
+    '<polygon fill="' + color + '" opacity=".9" points="' + b[0] + ',' + b[1] + ' ' + (ex + px * wid) + ',' + (ey + py * wid) + ' ' + (ex - px * wid) + ',' + (ey - py * wid) + '"/>';
 }
 function fmtEval(cp) {
   if (Math.abs(cp) >= MATE_T) return (cp > 0 ? '+' : '-') + 'M' + mateIn(cp);
   return (cp > 0 ? '+' : cp < 0 ? '-' : '') + Math.abs(cp / 100).toFixed(1);
 }
+const moveNo = r => r.fullmove + (r.color === 'w' ? '. ' : '... ');
+function badgeInline(label) { return '<span class="bdg inl l-' + label + '" aria-hidden="true">' + LABEL_MARK[label] + '</span>'; }
+const NOTABLE = { brilliant: 1, great: 1, book: 1, inaccuracy: 1, mistake: 1, miss: 1, blunder: 1 };
 
 /* ---------- Review ---------- */
 function openReview(url, ply) {
   const g = S.games.find(x => x.url === url), a = S.analyses[url]; if (!g || !a) return;
+  decorateAnalysis(a, S.book);
   let cur;
   if (ply != null) cur = ply + 1;
   else {
-    const fm = a.moves.find(m => m.isUser && (m.cls === 'mistake' || m.cls === 'blunder')) || a.moves.find(m => m.isUser && m.cls === 'inaccuracy');
+    const fm = a.moves.find(m => m.isUser && (m.label === 'mistake' || m.label === 'blunder' || m.label === 'miss')) || a.moves.find(m => m.isUser && m.label === 'inaccuracy');
     cur = fm ? fm.ply + 1 : 0;
   }
-  S.rv = { g, a, cur, flip: !g.isWhite, showBest: false };
+  S.rv = { g, a, cur, flip: !g.isWhite, showBest: false, alt: null, quiz: null, explorer: null };
   $('showBest').checked = false;
   showTab('review');
 }
 function rvGo(to) {
   const rv = S.rv; if (!rv) return;
+  rv.alt = null; rv.quiz = null;
   rv.cur = Math.max(0, Math.min(rv.a.moves.length, to)); renderReview();
 }
 function renderReview() {
   const rv = S.rv;
   $('reviewEmpty').hidden = !!rv; $('rv').hidden = !rv;
   if (!rv) return;
-  const { g, a } = rv, moves = a.moves, n = moves.length;
+  const { g, a } = rv; decorateAnalysis(a, S.book);
+  const moves = a.moves, n = moves.length, q = rv.quiz, al = rv.alt;
   const m = rv.cur > 0 ? moves[rv.cur - 1] : null;
-  const showBefore = rv.showBest && m;
-  const fen = showBefore ? m.fenBefore : a.fens[rv.cur];
-  const lastMv = !showBefore && m ? [m.from, m.to] : null;
-  $('board').innerHTML = boardHTML(fen, { flip: rv.flip, last: lastMv, lastCls: m ? 'c-' + m.cls : '' });
-  $('arrow').innerHTML = showBefore && m.bestUci ? arrowSVG(m.bestUci.slice(0, 2), m.bestUci.slice(2, 4), rv.flip) : '';
-  /* eval bar */
-  const ev = showBefore ? m.evBefore : (rv.cur === 0 ? a.moves[0].evBefore : moves[rv.cur - 1].evAfter);
-  const wp = winPct(ev);
+  const quizOn = q && q.i < q.items.length;
+  const showBefore = !q && !al && rv.showBest && m;
+  const o = { flip: rv.flip }; let fen, arrow = '', evCp = null;
+  if (quizOn) {
+    const qm = moves[q.items[q.i]]; fen = qm.fenBefore; o.flip = qm.color === 'b'; o.sel = q.sel;
+    if (q.sel && q.state === 'asking') { o.targets = {}; new Chess(fen).moves({ square: q.sel, verbose: true }).forEach(x => { o.targets[x.to] = 1; }); }
+    if (q.hint && q.state === 'asking') o.hint = qm.bestUci.slice(0, 2);
+    if (q.state === 'solved' || q.state === 'missed') { arrow = arrowSVG(qm.bestUci.slice(0, 2), qm.bestUci.slice(2, 4), o.flip); evCp = qm.evBefore; }
+  } else if (al) {
+    fen = al.idx === 0 ? al.startFen : al.steps[al.idx - 1].fen;
+    if (al.idx > 0) { const st = al.steps[al.idx - 1]; o.last = [st.from, st.to]; }
+    const nx = al.steps[al.idx];
+    if (nx) {
+      const mine = nx.color === (g.isWhite ? 'w' : 'b');
+      arrow = arrowSVG(nx.from, nx.to, rv.flip, al.kind === 'best' ? '#2E8B57' : (mine ? '#C9A227' : '#C2403A'));
+      if (al.kind !== 'best' && !mine && /x/.test(nx.san)) o.thr = { [nx.to]: 1 };
+    }
+    evCp = m ? m.evAfter : a.moves[0].evBefore;
+  } else {
+    fen = showBefore ? m.fenBefore : a.fens[rv.cur];
+    if (!showBefore && m) { o.last = [m.from, m.to]; o.lastCls = 'c-' + m.label; o.badge = { sq: m.to, label: m.label }; }
+    if (showBefore && m.bestUci) arrow = arrowSVG(m.bestUci.slice(0, 2), m.bestUci.slice(2, 4), rv.flip);
+    evCp = showBefore ? m.evBefore : (rv.cur === 0 ? a.moves[0].evBefore : moves[rv.cur - 1].evAfter);
+  }
+  $('board').innerHTML = boardHTML(fen, o);
+  $('arrow').innerHTML = arrow;
+  /* eval bar (hidden while a quiz question is open, so it does not give the answer away) */
   const fill = $('evalfill');
-  fill.style.height = wp + '%'; fill.style.top = rv.flip ? '0' : 'auto'; fill.style.bottom = rv.flip ? 'auto' : '0';
-  const lbl = fmtEval(ev);
-  $('evaltop').textContent = rv.flip ? lbl : ''; $('evalbot').textContent = rv.flip ? '' : lbl;
-  $('evaltop').style.color = wp > 50 && rv.flip ? '#14202B' : '#fff'; $('evalbot').style.color = wp > 50 && !rv.flip ? '#14202B' : '#fff';
-  $('evalbar').setAttribute('aria-label', 'Evaluation ' + lbl);
+  if (evCp == null) {
+    fill.style.height = '50%'; fill.style.top = 'auto'; fill.style.bottom = '0';
+    $('evaltop').textContent = ''; $('evalbot').textContent = ''; $('evalbar').setAttribute('aria-label', 'Evaluation hidden during the quiz');
+  } else {
+    const wp = winPct(evCp), flip = o.flip, lbl = fmtEval(evCp);
+    fill.style.height = wp + '%'; fill.style.top = flip ? '0' : 'auto'; fill.style.bottom = flip ? 'auto' : '0';
+    $('evaltop').textContent = flip ? lbl : ''; $('evalbot').textContent = flip ? '' : lbl;
+    $('evaltop').style.color = wp > 50 && flip ? '#14202B' : '#fff'; $('evalbot').style.color = wp > 50 && !flip ? '#14202B' : '#fff';
+    $('evalbar').setAttribute('aria-label', 'Evaluation ' + lbl);
+  }
   $('rvTitle').textContent = 'You (' + (g.isWhite ? 'White' : 'Black') + ') vs ' + g.opp.name + ' (' + g.opp.rating + ')';
   $('rvSub').textContent = g.opening + ' · ' + fmtDate(g.endTime) + ' · ' + g.timeClass + ' · accuracy ' + (a.accuracy != null ? a.accuracy.toFixed(0) + '%' : 'n/a');
-  renderGraph(); renderMoveList(); renderDetail(m, showBefore);
-  $('bFirst').disabled = $('bPrev').disabled = rv.cur === 0; $('bNext').disabled = $('bLast').disabled = rv.cur === n;
+  renderStory(); renderGraph(); renderMoveList();
+  if (quizOn || (q && q.i >= q.items.length)) $('detail').innerHTML = quizHTML();
+  else if (al) $('detail').innerHTML = altHTML();
+  else renderDetail(m, showBefore);
+  const nav = !!al;
+  $('bFirst').disabled = nav || !!q || rv.cur === 0; $('bPrev').disabled = nav ? al.idx === 0 : (!!q || rv.cur === 0);
+  $('bNext').disabled = nav ? al.idx >= al.steps.length : (!!q || rv.cur === n); $('bLast').disabled = nav || !!q || rv.cur === n;
+  $('quizBtn').textContent = q ? 'Leave quiz' : 'Quiz me';
+  $('quizBtn').disabled = !q && !quizItems(a).length;
 }
 function renderGraph() {
   const { a, cur } = S.rv, moves = a.moves, n = moves.length, W = 600, H = 120;
@@ -1241,10 +1614,9 @@ function renderGraph() {
   const pts = evs.map((e, i) => X(i).toFixed(1) + ',' + Y(e).toFixed(1)).join(' ');
   let h = '<rect x="0" y="0" width="600" height="120" fill="var(--soft)"/><line x1="0" y1="60" x2="600" y2="60" stroke="var(--line)" stroke-width="1"/>' +
     '<polygon points="0,120 ' + pts + ' 600,120" fill="var(--accent)" opacity=".18"/><polyline points="' + pts + '" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+  const dotCol = { blunder: 'var(--blunder)', mistake: 'var(--mistake)', miss: 'var(--mistake)', brilliant: 'var(--brilliant)', great: 'var(--great)' };
   moves.forEach(m => {
-    if (m.isUser && (m.cls === 'mistake' || m.cls === 'blunder')) {
-      h += '<circle cx="' + X(m.ply + 1).toFixed(1) + '" cy="' + Y(m.evAfter).toFixed(1) + '" r="5" fill="' + (m.cls === 'blunder' ? 'var(--blunder)' : 'var(--mistake)') + '" stroke="var(--card)" stroke-width="1.5"/>';
-    }
+    if (m.isUser && dotCol[m.label]) h += '<circle cx="' + X(m.ply + 1).toFixed(1) + '" cy="' + Y(m.evAfter).toFixed(1) + '" r="5" fill="' + dotCol[m.label] + '" stroke="var(--card)" stroke-width="1.5"/>';
   });
   h += '<line x1="' + X(cur) + '" y1="0" x2="' + X(cur) + '" y2="120" stroke="var(--ink)" stroke-width="1.5" opacity=".7"/>';
   $('graph').innerHTML = h;
@@ -1254,13 +1626,12 @@ function renderMoveList() {
   a.moves.forEach((m, i) => {
     if (m.color === 'w') h += '<div class="n">' + m.fullmove + '.</div>';
     else if (i === 0) h += '<div class="n">1.</div><div></div>';
-    const mark = MARKS[m.cls];
-    h += '<button type="button" data-ply="' + (i + 1) + '" class="' + (m.isUser ? 'user ' : '') + (cur === i + 1 ? 'cur' : '') + '"' + ' aria-label="' + esc(m.san) + (mark ? ' ' + m.cls : '') + '">' + esc(m.san) + (mark ? '<span class="mk ' + m.cls + '">' + mark + '</span>' : '') + '</button>';
+    const mark = NOTABLE[m.label] ? LABEL_MARK[m.label] : '';
+    h += '<button type="button" data-ply="' + (i + 1) + '" class="' + (m.isUser ? 'user ' : '') + (cur === i + 1 ? 'cur' : '') + '"' + ' aria-label="' + esc(m.san) + (mark ? ' ' + LABEL_WORD[m.label] : '') + '">' + esc(m.san) + (mark ? '<span class="mk ' + m.label + '">' + mark + '</span>' : '') + '</button>';
   });
   const el = $('movelist'); el.innerHTML = h;
   const c = el.querySelector('.cur'); if (c) { const top = c.offsetTop - el.clientHeight / 2; el.scrollTop = Math.max(0, top); }
 }
-const CLS_WORD = { best: 'Best move', good: 'Good move', inaccuracy: 'Inaccuracy', mistake: 'Mistake', blunder: 'Blunder' };
 function lessonHTML(L, cls) {
   return '<div class="lesson ' + cls + '"><h3>' + esc(L.title) + '</h3>' +
     '<p><span class="k">What happened.</span> ' + esc(L.what) + '</p>' +
@@ -1268,19 +1639,186 @@ function lessonHTML(L, cls) {
     '<p><span class="k">Look for next time.</span> ' + esc(L.next) + '</p></div>';
 }
 function renderDetail(m, showBefore) {
-  const el = $('detail');
-  if (!m) { el.innerHTML = '<p class="muted">Start of the game. Use the arrow keys or the buttons to step through the moves.</p>'; return; }
+  const el = $('detail'), rv = S.rv;
+  if (!m) { el.innerHTML = '<p class="muted">Start of the game. Use the arrow keys or the buttons to step through the moves. Every move gets a label and a short note.</p>'; return; }
   const who = m.isUser ? 'Your move' : 'Opponent’s move';
-  let h = '<h3><span class="dot c-' + m.cls + '"></span>' + m.fullmove + (m.color === 'w' ? '. ' : '... ') + esc(m.san) + ' <span class="muted" style="font-weight:500">' + who + ', ' + CLS_WORD[m.cls].toLowerCase() + '</span></h3>';
+  let h = '<h3>' + badgeInline(m.label) + moveNo(m) + esc(m.san) + ' <span class="muted" style="font-weight:500">' + who + ', ' + esc(LABEL_WORD[m.label].toLowerCase()) + '</span></h3>';
   h += '<p class="small muted">Evaluation ' + fmtEval(m.evBefore) + ' to ' + fmtEval(m.evAfter) + ' (White’s view). ' + (m.isUser ? 'Your' : 'Their') + ' win chance ' + Math.round(winPct(m.moverBefore)) + '% to ' + Math.round(winPct(m.moverAfter)) + '%.' + '</p>';
-  if (m.bestUci && m.bestUci !== m.uci) {
-    h += '<p><span class="k">Engine’s best move:</span> <b>' + esc(m.bestSan) + '</b>' + (m.bestLineSan ? ' <span class="line">' + esc(m.bestLineSan) + '</span>' : '') + '</p>';
-  } else if (m.isUser) h += '<p class="small muted">That was the engine’s top choice or close to it.</p>';
-  if (m.lesson) h += lessonHTML(m.lesson, m.cls);
-  else if (!m.isUser && (m.cls === 'mistake' || m.cls === 'blunder')) h += '<p class="small muted">Your opponent slipped here. Did you see it?</p>';
-  else if (m.isUser && (m.cls === 'inaccuracy')) h += '<p class="small muted">A small slip. Lessons appear for mistakes and blunders.</p>';
+  if (m.isUser && m.lesson && m.label !== 'book') {
+    h += lessonHTML(m.lesson, m.cls);
+    if (m.label === 'miss') h += '<p class="coach">You had a chance to punish your opponent’s previous move and let it go.</p>';
+  } else h += '<p class="coach">' + esc(commentFor(m, rv.a)) + '</p>';
+  if (m.bestUci && m.bestUci !== m.uci) h += '<p><span class="k">Engine’s best move:</span> <b>' + esc(m.bestSan) + '</b>' + (m.bestLineSan ? ' <span class="line">' + esc(m.bestLineSan) + '</span>' : '') + '</p>';
+  const nx = rv.a.moves[m.ply + 1];
+  let btns = '';
+  if (m.bestPv && m.bestPv.length >= 2 && m.label !== 'book' && (m.bestUci !== m.uci || m.label === 'brilliant' || m.label === 'great')) btns += '<button class="btn small" data-alt="best">Play the ' + (m.bestUci === m.uci ? 'engine' : 'best') + ' line</button>';
+  if (m.isUser && m.loss >= 5 && m.refuteUci && m.label !== 'book') btns += '<button class="btn small" data-alt="fail">Why it fails</button>';
+  if (!m.isUser && m.loss >= 10 && nx && nx.bestPv && nx.bestPv.length) btns += '<button class="btn small" data-alt="punish">Show how to punish it</button>';
+  if (btns) h += '<div class="ctrl">' + btns + '</div>';
   if (showBefore) h += '<p class="small muted">Showing the position before ' + esc(m.san) + ', with the engine’s move as a green arrow.</p>';
   el.innerHTML = h;
+}
+
+/* ---------- lines on the board ("show the idea") ---------- */
+function startAlt(kind) {
+  const rv = S.rv, m = rv && rv.cur > 0 ? rv.a.moves[rv.cur - 1] : null; if (!m) return;
+  const nx = rv.a.moves[m.ply + 1];
+  let steps, startFen, title, note;
+  if (kind === 'best') { startFen = m.fenBefore; steps = lineFens(startFen, m.bestPv, 8); title = (m.bestUci === m.uci ? 'The engine’s line' : 'The better line'); note = 'Start of the line is the position before ' + m.san + '. The green arrow shows the next move.'; }
+  else if (kind === 'fail') { startFen = m.fenBefore; steps = lineFens(startFen, [m.uci].concat(m.refutePv || []), 7); title = 'Why ' + m.san + ' fails'; note = 'First your move, then the reply that punishes it (red arrow, with the target outlined).'; }
+  else { startFen = m.fenAfter; steps = lineFens(startFen, nx ? nx.bestPv : [], 7); title = 'How to punish ' + m.san; note = 'Your best moves from here. The green arrow shows the next one.'; }
+  if (!steps.length) return;
+  rv.alt = { kind: kind === 'punish' ? 'best' : kind, startFen, steps, idx: 0, title, note, ply: m.ply };
+  renderReview();
+}
+function altStep(d) {
+  const al = S.rv && S.rv.alt; if (!al) return;
+  al.idx = Math.max(0, Math.min(al.steps.length, al.idx + d)); renderReview();
+}
+function numberedSteps(startFen, steps) {
+  let num = +startFen.split(' ')[5] || 1, white = startFen.split(' ')[1] === 'w';
+  return steps.map((s, i) => {
+    const lab = white ? num + '. ' + s.san : (i === 0 ? num + '... ' : '') + s.san;
+    if (!white) num++; white = !white; return lab;
+  });
+}
+function altHTML() {
+  const al = S.rv.alt, labs = numberedSteps(al.startFen, al.steps);
+  let h = '<h3>' + esc(al.title) + '</h3><p class="small muted">' + esc(al.note) + '</p><div class="steps">';
+  h += '<button type="button" class="stp' + (al.idx === 0 ? ' cur' : '') + '" data-aidx="0">Start</button>';
+  labs.forEach((l, i) => { h += '<button type="button" class="stp' + (al.idx === i + 1 ? ' cur' : '') + '" data-aidx="' + (i + 1) + '">' + esc(l) + '</button>'; });
+  h += '</div><div class="ctrl"><button class="btn small" data-aact="prev"' + (al.idx === 0 ? ' disabled' : '') + '>Back</button><button class="btn small" data-aact="next"' + (al.idx >= al.steps.length ? ' disabled' : '') + '>Next</button><button class="btn small primary" data-aact="exit">Back to the game</button></div>';
+  const m = S.rv.a.moves[al.ply];
+  if (al.kind === 'fail') h += '<p class="coach">' + esc(commentFor(m, S.rv.a)) + '</p>';
+  return h;
+}
+
+/* ---------- game story and opening ---------- */
+function renderStory() {
+  const rv = S.rv, el = $('story'); if (!rv) return;
+  const a = rv.a, g = rv.g;
+  if (!rv.story || rv.storyBook !== !!S.book) { rv.story = buildStory(a, g); rv.storyBook = !!S.book; }
+  const s = rv.story, op = a.opening;
+  const open = el.dataset.init ? el.querySelector('details') && el.querySelector('details').open : true;
+  let h = '<details' + (open ? ' open' : '') + '><summary><h2>Game story: ' + esc(s.headline) + '</h2></summary>';
+  s.paragraphs.filter(p => !(op && op.available && p === op.text)).forEach(p => { h += '<p>' + esc(p) + '</p>'; });
+  const cu = a.counts.u, chips = LABEL_ORDER.filter(l => cu[l]).map(l => '<span class="chip">' + badgeInline(l) + ' ' + esc(LABEL_WORD[l]) + ' <b>' + cu[l] + '</b></span>');
+  if (chips.length) h += '<p class="small muted" style="margin-bottom:4px">Your moves</p><div class="chips">' + chips.join('') + '</div>';
+  if (s.moments.length) {
+    h += '<p class="small muted" style="margin-bottom:4px">Key moments, tap to open</p><div class="ctrl" style="margin-top:0">';
+    s.moments.forEach(k => { h += '<button class="btn small" data-jump="' + k.ply + '">' + badgeInline(k.label) + esc(k.title) + '</button>'; });
+    h += '</div>';
+  }
+  h += '<h3 style="margin-top:14px">Opening</h3>';
+  if (op && op.available) {
+    h += '<p>' + esc(op.text) + '</p>';
+    if (op.bookNext.length) h += '<p class="small"><span class="k" style="font-weight:700">Book moves from there:</span> ' + op.bookNext.map(b => '<b>' + esc(b.san) + '</b>' + (b.name ? ' (' + esc(b.name) + ')' : '')).join(', ') + '.</p>';
+    if (op.fen) {
+      h += '<div class="ctrl" style="margin-top:6px"><button class="btn small" data-explorer="1"' + (rv.explorer && rv.explorer.state === 'loading' ? ' disabled' : '') + '>Compare with master games</button>' +
+        (op.leftPly != null ? '<button class="btn small" data-jump="' + op.leftPly + '">Go to that move</button>' : '') + '</div>';
+      h += explorerHTML(rv.explorer);
+    }
+  } else h += '<p class="muted small">' + (S.bookErr ? 'The opening book could not be loaded (' + esc(S.bookErr) + '), so book moves are not marked.' : 'Loading the opening book...') + '</p>';
+  h += '</details>';
+  el.innerHTML = h; el.dataset.init = '1';
+}
+function explorerHTML(x) {
+  if (!x) return '';
+  if (x.state === 'loading') return '<p class="muted small">Asking the Lichess opening explorer...</p>';
+  if (x.state === 'error') return '<p class="note warn small">The Lichess opening explorer did not answer (' + esc(x.msg) + '). The built-in book above still works.</p>';
+  const j = x.data, tot = (j.white || 0) + (j.draws || 0) + (j.black || 0);
+  if (!j.moves || !j.moves.length || !tot) return '<p class="muted small">No master games reached this position.</p>';
+  let h = '<p class="small muted" style="margin-bottom:4px">Master games from that position (' + tot.toLocaleString() + ' games, Lichess explorer)</p><table class="t"><thead><tr><th>Move</th><th class="n">Played</th><th class="n">White / draw / Black</th></tr></thead><tbody>';
+  j.moves.slice(0, 6).forEach(mv => {
+    const n = (mv.white || 0) + (mv.draws || 0) + (mv.black || 0) || 1;
+    h += '<tr><td><b>' + esc(mv.san) + '</b></td><td class="n">' + Math.round(n / tot * 100) + '%</td><td class="n">' + Math.round((mv.white || 0) / n * 100) + ' / ' + Math.round((mv.draws || 0) / n * 100) + ' / ' + Math.round((mv.black || 0) / n * 100) + '</td></tr>';
+  });
+  return h + '</tbody></table>';
+}
+async function runExplorer() {
+  const rv = S.rv; if (!rv || !rv.a.opening || !rv.a.opening.fen) return;
+  const fen = rv.a.opening.fen;
+  rv.explorer = { state: 'loading' }; renderStory();
+  try {
+    const r = await fetch('https://explorer.lichess.ovh/masters?moves=6&topGames=0&fen=' + encodeURIComponent(fen));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    rv.explorer = { state: 'ok', data: await r.json() };
+  } catch (e) { rv.explorer = { state: 'error', msg: /Failed to fetch|NetworkError|Load failed/i.test(e.message || '') ? 'could not be reached, or the browser blocked it' : (e.message || 'unknown error') }; }
+  if (S.rv === rv) renderStory();
+}
+
+/* ---------- quiz: find the best move at your key moments ---------- */
+function startQuiz() {
+  const rv = S.rv; if (!rv) return;
+  const items = quizItems(rv.a); if (!items.length) { showMsg('This game has no key moments to quiz on.', 'info'); return; }
+  rv.alt = null; rv.quiz = { items, i: 0, sel: null, state: 'asking', msg: '', solved: 0, missed: 0, hint: false };
+  renderReview();
+}
+function quizHTML() {
+  const rv = S.rv, q = rv.quiz, a = rv.a;
+  if (q.i >= q.items.length) {
+    return '<h3>Quiz finished</h3><p>You found ' + q.solved + ' of ' + q.items.length + ' best moves.' + (q.missed ? ' The ones you missed are saved under Train, in Retry missed.' : '') + '</p><div class="ctrl"><button class="btn primary" data-qact="exit">Back to the game</button><button class="btn" data-qact="again">Try again</button></div>';
+  }
+  const m = a.moves[q.items[q.i]], side = m.color === 'w' ? 'White' : 'Black';
+  let h = '<h3>Find the best move</h3><p class="small muted">Key moment ' + (q.i + 1) + ' of ' + q.items.length + ' · move ' + m.fullmove + ' · ' + side + ' to move (you)</p>';
+  if (q.state === 'asking') {
+    h += '<p>Tap a piece, then the square to move it. The evaluation is hidden until you answer.</p><div class="ctrl"><button class="btn small" data-qact="hint"' + (q.hint ? ' disabled' : '') + '>Hint: which piece?</button><button class="btn small" data-qact="skip">Skip</button><button class="btn small" data-qact="exit">Leave quiz</button></div>';
+  } else if (q.state === 'checking') h += '<p class="muted">Checking your move with Stockfish...</p>';
+  else {
+    h += '<p class="verdict ' + (q.state === 'solved' ? 'ok' : 'no') + '">' + esc(q.msg) + '</p>';
+    h += '<p><span class="k">Engine’s best:</span> <b>' + esc(m.bestSan) + '</b> <span class="line">' + esc(m.bestLineSan) + '</span></p>';
+    h += '<p class="small muted">In the game you played ' + esc(m.san) + ' (' + esc(LABEL_WORD[m.label].toLowerCase()) + ').</p>';
+    h += m.lesson ? lessonHTML(m.lesson, m.cls) : '<p class="coach">' + esc(commentFor(m, a)) + '</p>';
+    h += '<div class="ctrl"><button class="btn primary" data-qact="next">' + (q.i + 1 < q.items.length ? 'Next key moment' : 'Finish') + '</button><button class="btn small" data-qact="ingame">See it in the game</button></div>';
+  }
+  return h;
+}
+function quizSquareClick(nm) {
+  const rv = S.rv, q = rv && rv.quiz; if (!q || q.state !== 'asking' || q.i >= q.items.length) return;
+  const m = rv.a.moves[q.items[q.i]], c = new Chess(m.fenBefore), pc = c.get(nm);
+  if (q.sel && q.sel !== nm && c.moves({ square: q.sel, verbose: true }).some(x => x.to === nm)) { quizAttempt(q.sel, nm); return; }
+  q.sel = pc && pc.color === m.color ? (q.sel === nm ? null : nm) : null;
+  renderReview();
+}
+async function quizAttempt(from, to) {
+  const rv = S.rv, q = rv.quiz, m = rv.a.moves[q.items[q.i]];
+  const c = new Chess(m.fenBefore), piece = c.get(from);
+  const promo = piece && piece.type === 'p' && (to[1] === '8' || to[1] === '1') ? 'q' : undefined;
+  const mv = c.move({ from, to, promotion: promo }); q.sel = null;
+  if (!mv) { renderReview(); return; }
+  const uci = from + to + (promo || '');
+  let ok = uci === m.bestUci, msg = ok ? 'Correct, that is the engine’s top move.' : '';
+  if (!ok) {
+    q.state = 'checking'; renderReview();
+    let evAfter = null;
+    try {
+      const tv = terminalEval(c.fen());
+      if (tv !== null) evAfter = m.color === 'w' ? tv : -tv;
+      else { const r = await engine.evalFen(c.fen(), S.depth); evAfter = m.color === 'w' ? r.cp : -r.cp; }
+    } catch (e) { evAfter = null; }
+    if (S.rv !== rv || rv.quiz !== q) return;
+    if (puzzleAccepts({ bestUci: m.bestUci, moverBefore: m.moverBefore }, uci, evAfter)) { ok = true; msg = 'Correct. ' + mv.san + ' is not the engine’s first choice but keeps your win chance within 3% of it.'; }
+    else if (evAfter == null) msg = 'Not the best move. (Stockfish was not available to check other moves.) The best was ' + m.bestSan + '.';
+    else msg = mv.san + ' keeps about ' + Math.round(winPct(evAfter)) + '% win chance, against ' + Math.round(winPct(m.moverBefore)) + '% for ' + m.bestSan + '.';
+  }
+  q.state = ok ? 'solved' : 'missed'; q.msg = msg;
+  if (ok) q.solved++;
+  else {
+    q.missed++;
+    if (m.loss >= 10) {
+      const p = { id: rv.g.url + '#' + m.ply, url: rv.g.url, ply: m.ply, fen: m.fenBefore, side: m.color, bestUci: m.bestUci, bestSan: m.bestSan, bestLine: m.bestLineSan, playedSan: m.san, moverBefore: m.moverBefore, loss: m.loss, cls: m.cls, lesson: m.lesson };
+      saveRetry([p].concat(retryList().filter(x => x.id !== p.id)));
+    }
+  }
+  renderReview();
+}
+function quizAction(act) {
+  const rv = S.rv, q = rv && rv.quiz; if (!q) return;
+  if (act === 'exit') { rv.quiz = null; renderReview(); return; }
+  if (act === 'again') { startQuiz(); return; }
+  if (act === 'hint') { q.hint = true; renderReview(); return; }
+  if (act === 'ingame') { const ply = q.items[q.i]; rv.quiz = null; rvGo(ply + 1); return; }
+  if (act === 'next' || act === 'skip') { q.i++; q.sel = null; q.state = 'asking'; q.hint = false; renderReview(); }
 }
 
 /* ---------- Patterns ---------- */
@@ -1411,9 +1949,21 @@ function wire() {
     const b = e.target.closest('button[data-act]'); if (!b) return;
     if (b.dataset.act === 'review') openReview(b.dataset.url); else analyzeOne(b.dataset.url);
   });
-  $('board').addEventListener('click', () => { /* review board is read-only */ });
-  $('bFirst').onclick = () => rvGo(0); $('bPrev').onclick = () => rvGo(S.rv.cur - 1);
-  $('bNext').onclick = () => rvGo(S.rv.cur + 1); $('bLast').onclick = () => rvGo(1e9);
+  $('board').addEventListener('click', e => { const sq = e.target.closest('.sq'); if (sq && S.rv && S.rv.quiz) quizSquareClick(sq.dataset.sq); });
+  $('quizBtn').onclick = () => { if (!S.rv) return; if (S.rv.quiz) { S.rv.quiz = null; renderReview(); } else startQuiz(); };
+  $('detail').addEventListener('click', e => {
+    const al = e.target.closest('button[data-alt]'); if (al) { startAlt(al.dataset.alt); return; }
+    const ai = e.target.closest('button[data-aidx]'); if (ai && S.rv.alt) { S.rv.alt.idx = +ai.dataset.aidx; renderReview(); return; }
+    const aa = e.target.closest('button[data-aact]');
+    if (aa) { if (aa.dataset.aact === 'exit') { S.rv.alt = null; renderReview(); } else altStep(aa.dataset.aact === 'next' ? 1 : -1); return; }
+    const qa = e.target.closest('button[data-qact]'); if (qa) quizAction(qa.dataset.qact);
+  });
+  $('story').addEventListener('click', e => {
+    const j = e.target.closest('button[data-jump]'); if (j) { rvGo(+j.dataset.jump + 1); return; }
+    if (e.target.closest('button[data-explorer]')) runExplorer();
+  });
+  $('bFirst').onclick = () => rvGo(0); $('bPrev').onclick = () => (S.rv.alt ? altStep(-1) : rvGo(S.rv.cur - 1));
+  $('bNext').onclick = () => (S.rv.alt ? altStep(1) : rvGo(S.rv.cur + 1)); $('bLast').onclick = () => rvGo(1e9);
   $('bFlip').onclick = () => { S.rv.flip = !S.rv.flip; renderReview(); };
   $('showBest').onchange = e => { S.rv.showBest = e.target.checked; renderReview(); };
   $('movelist').addEventListener('click', e => { const b = e.target.closest('button[data-ply]'); if (b) rvGo(+b.dataset.ply); });
@@ -1423,6 +1973,13 @@ function wire() {
   });
   document.addEventListener('keydown', e => {
     if (S.tab !== 'review' || !S.rv || /INPUT|SELECT|TEXTAREA/.test((e.target.tagName || ''))) return;
+    if (S.rv.quiz) { if (e.key === 'Escape') { S.rv.quiz = null; renderReview(); } return; }
+    if (S.rv.alt) {
+      if (e.key === 'ArrowLeft') { e.preventDefault(); altStep(-1); }
+      else if (e.key === 'ArrowRight') { e.preventDefault(); altStep(1); }
+      else if (e.key === 'Escape') { S.rv.alt = null; renderReview(); }
+      return;
+    }
     if (e.key === 'ArrowLeft') { e.preventDefault(); rvGo(S.rv.cur - 1); }
     else if (e.key === 'ArrowRight') { e.preventDefault(); rvGo(S.rv.cur + 1); }
     else if (e.key === 'Home') { e.preventDefault(); rvGo(0); }
@@ -1440,10 +1997,22 @@ function wire() {
     if (ac.dataset.act === 'restart') { T.solved = 0; T.missed = 0; renderTrain(true); }
   });
 }
+/* opening book: Lichess chess-openings (CC0), served from this site as vendor/openings.json */
+async function loadBook() {
+  try {
+    const r = await fetch('vendor/openings.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const rows = await r.json();
+    if (!Array.isArray(rows) || rows.length < 1000) throw new Error('unexpected file');
+    S.book = buildBook(rows); S.bookErr = '';
+    console.log('[post-mortem] opening book loaded: ' + rows.length + ' named lines');
+  } catch (e) { S.book = null; S.bookErr = e.message || 'unknown error'; console.warn('[post-mortem] opening book unavailable: ' + S.bookErr); }
+  if (S.rv) renderReview();
+}
 function init() {
   const now = new Date(); $('month').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
   const u = store.get('pm1:user'); if (u) { $('user').value = u; const sv = loadSaved(u); if (sv && sv.length) { S.user = u; S.games = sv; afterGamesLoaded(); showMsg('Showing games saved on this device. Press Load games to refresh.', 'info'); } }
-  wire(); showTab('games');
+  wire(); showTab('games'); loadBook();
   if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register('sw.js').catch(() => { /* optional */ });
   window.__pm = { S, engine };
 }
