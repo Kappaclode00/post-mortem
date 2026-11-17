@@ -123,6 +123,7 @@ li.game .side{display:flex;gap:8px;align-items:center;justify-content:flex-end}
 .l-brilliant{background:var(--brilliant)}.l-great{background:var(--great)}.l-best{background:var(--best)}.l-excellent{background:#5BAE7B}.l-good{background:#7E9A88}.l-book{background:var(--book)}.l-inaccuracy{background:#B8921A}.l-mistake,.l-miss{background:#C26F1E}.l-blunder{background:var(--blunder)}
 .sq.thr{box-shadow:inset 0 0 0 .7cqw var(--blunder)}
 .sq.hint{box-shadow:inset 0 0 0 .7cqw var(--great)}
+.linkbtn{display:inline-flex;align-items:center;text-decoration:none;color:var(--ink)}
 .coach{background:var(--soft);border-radius:8px;padding:8px 10px;margin:8px 0}
 .steps{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 4px}
 .stp{border:1px solid var(--line);background:var(--card);border-radius:8px;min-height:36px;padding:0 10px;font-variant-numeric:tabular-nums}
@@ -1541,7 +1542,7 @@ function openReview(url, ply) {
     const fm = a.moves.find(m => m.isUser && (m.label === 'mistake' || m.label === 'blunder' || m.label === 'miss')) || a.moves.find(m => m.isUser && m.label === 'inaccuracy');
     cur = fm ? fm.ply + 1 : 0;
   }
-  S.rv = { g, a, cur, flip: !g.isWhite, showBest: false, alt: null, quiz: null, explorer: null };
+  S.rv = { g, a, cur, flip: !g.isWhite, showBest: false, alt: null, quiz: null };
   $('showBest').checked = false;
   showTab('review');
 }
@@ -1714,39 +1715,13 @@ function renderStory() {
     h += '<p>' + esc(op.text) + '</p>';
     if (op.bookNext.length) h += '<p class="small"><span class="k" style="font-weight:700">Book moves from there:</span> ' + op.bookNext.map(b => '<b>' + esc(b.san) + '</b>' + (b.name ? ' (' + esc(b.name) + ')' : '')).join(', ') + '.</p>';
     if (op.fen) {
-      h += '<div class="ctrl" style="margin-top:6px"><button class="btn small" data-explorer="1"' + (rv.explorer && rv.explorer.state === 'loading' ? ' disabled' : '') + '>Compare with master games</button>' +
-        (op.leftPly != null ? '<button class="btn small" data-jump="' + op.leftPly + '">Go to that move</button>' : '') + '</div>';
-      h += explorerHTML(rv.explorer);
+      h += '<div class="ctrl" style="margin-top:6px">' + (op.leftPly != null ? '<button class="btn small" data-jump="' + op.leftPly + '">Go to that move</button>' : '') +
+        '<a class="btn small linkbtn" target="_blank" rel="noopener" href="https://lichess.org/analysis/' + op.fen.replace(/ /g, '_') + '">Open that position on Lichess</a></div>';
     }
   } else h += '<p class="muted small">' + (S.bookErr ? 'The opening book could not be loaded (' + esc(S.bookErr) + '), so book moves are not marked.' : 'Loading the opening book...') + '</p>';
   h += '</details>';
   el.innerHTML = h; el.dataset.init = '1';
 }
-function explorerHTML(x) {
-  if (!x) return '';
-  if (x.state === 'loading') return '<p class="muted small">Asking the Lichess opening explorer...</p>';
-  if (x.state === 'error') return '<p class="note warn small">The Lichess opening explorer did not answer (' + esc(x.msg) + '). The built-in book above still works.</p>';
-  const j = x.data, tot = (j.white || 0) + (j.draws || 0) + (j.black || 0);
-  if (!j.moves || !j.moves.length || !tot) return '<p class="muted small">No master games reached this position.</p>';
-  let h = '<p class="small muted" style="margin-bottom:4px">Master games from that position (' + tot.toLocaleString() + ' games, Lichess explorer)</p><table class="t"><thead><tr><th>Move</th><th class="n">Played</th><th class="n">White / draw / Black</th></tr></thead><tbody>';
-  j.moves.slice(0, 6).forEach(mv => {
-    const n = (mv.white || 0) + (mv.draws || 0) + (mv.black || 0) || 1;
-    h += '<tr><td><b>' + esc(mv.san) + '</b></td><td class="n">' + Math.round(n / tot * 100) + '%</td><td class="n">' + Math.round((mv.white || 0) / n * 100) + ' / ' + Math.round((mv.draws || 0) / n * 100) + ' / ' + Math.round((mv.black || 0) / n * 100) + '</td></tr>';
-  });
-  return h + '</tbody></table>';
-}
-async function runExplorer() {
-  const rv = S.rv; if (!rv || !rv.a.opening || !rv.a.opening.fen) return;
-  const fen = rv.a.opening.fen;
-  rv.explorer = { state: 'loading' }; renderStory();
-  try {
-    const r = await fetch('https://explorer.lichess.ovh/masters?moves=6&topGames=0&fen=' + encodeURIComponent(fen));
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    rv.explorer = { state: 'ok', data: await r.json() };
-  } catch (e) { rv.explorer = { state: 'error', msg: /Failed to fetch|NetworkError|Load failed/i.test(e.message || '') ? 'could not be reached, or the browser blocked it' : (e.message || 'unknown error') }; }
-  if (S.rv === rv) renderStory();
-}
-
 /* ---------- quiz: find the best move at your key moments ---------- */
 function startQuiz() {
   const rv = S.rv; if (!rv) return;
@@ -1960,7 +1935,6 @@ function wire() {
   });
   $('story').addEventListener('click', e => {
     const j = e.target.closest('button[data-jump]'); if (j) { rvGo(+j.dataset.jump + 1); return; }
-    if (e.target.closest('button[data-explorer]')) runExplorer();
   });
   $('bFirst').onclick = () => rvGo(0); $('bPrev').onclick = () => (S.rv.alt ? altStep(-1) : rvGo(S.rv.cur - 1));
   $('bNext').onclick = () => (S.rv.alt ? altStep(1) : rvGo(S.rv.cur + 1)); $('bLast').onclick = () => rvGo(1e9);
